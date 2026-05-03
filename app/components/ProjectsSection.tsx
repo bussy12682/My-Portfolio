@@ -6,7 +6,7 @@ export default function ProjectsSection() {
       technologies: ["React", "TypeScript", "Supabase", "Tailwind CSS"],
       link: "https://github.com/bussy12682/Edulife-Hub",
       github: "https://github.com/bussy12682/Edulife-Hub",
-      image: "/edulife-pic.jpeg"
+      image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
     },
     {
       title: "Aethra Project",
@@ -22,7 +22,7 @@ export default function ProjectsSection() {
       technologies: ["HTML", "JavaScript", "Node.js", "Email Integration"],
       link: "https://github.com/ROCK-TECH-web/Nyc-Congress",
       github: "https://github.com/ROCK-TECH-web/Nyc-Congress",
-      image: "/nyc-pic.jpeg"
+      image: "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
     }
   ];
 

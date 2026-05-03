@@ -1,4 +1,58 @@
+"use client";
+
+import { FormEvent, useState } from "react";
+
 export default function ContactSection() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus(null);
+    setError(null);
+
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      setError("Please fill in all fields before sending.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, message }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send the message.");
+      }
+
+      setStatus("Message sent successfully. I will reply as soon as possible.");
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      console.error(err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again later."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <section id="contact" className="py-20 px-4 bg-gray-50 dark:bg-gray-800">
       <div className="max-w-4xl mx-auto">
@@ -16,21 +70,21 @@ export default function ContactSection() {
             </p>
             <div className="space-y-4">
               <div className="flex items-center">
-                <span className="text-gray-500 dark:text-gray-400 mr-3">📧</span>
+                <span className="text-gray-500 dark:text-gray-400 mr-3">??</span>
                 <span className="text-gray-700 dark:text-gray-300">enochfisayo434@gmail.com</span>
               </div>
               <div className="flex items-center">
-                <span className="text-gray-500 dark:text-gray-400 mr-3">📱</span>
+                <span className="text-gray-500 dark:text-gray-400 mr-3">??</span>
                 <span className="text-gray-700 dark:text-gray-300">+2349052470834</span>
               </div>
               <div className="flex items-center">
-                <span className="text-gray-500 dark:text-gray-400 mr-3">📍</span>
+                <span className="text-gray-500 dark:text-gray-400 mr-3">??</span>
                 <span className="text-gray-700 dark:text-gray-300">Akesan, Nigeria</span>
               </div>
             </div>
           </div>
           <div>
-            <form className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" aria-live="polite">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Name
@@ -38,6 +92,8 @@ export default function ContactSection() {
                 <input
                   type="text"
                   id="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="Your Name"
                 />
@@ -49,6 +105,8 @@ export default function ContactSection() {
                 <input
                   type="email"
                   id="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="your.email@example.com"
                 />
@@ -60,15 +118,20 @@ export default function ContactSection() {
                 <textarea
                   id="message"
                   rows={4}
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="Your message..."
                 ></textarea>
               </div>
+              {status && <p className="text-green-600 dark:text-green-300">{status}</p>}
+              {error && <p className="text-red-600 dark:text-red-300">{error}</p>}
               <button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md font-medium transition-colors"
+                disabled={isSubmitting}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-md font-medium transition-colors"
               >
-                Send Message
+                {isSubmitting ? "Sending..." : "Send Message"}
               </button>
             </form>
           </div>
