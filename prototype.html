@@ -29,23 +29,25 @@
     body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(--font-body); -webkit-font-smoothing: antialiased; }
     [hidden] { display: none !important; }
     body.splash-active { overflow: hidden; }
-    .splash-screen { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: hidden; color: #f4f8fa; background: radial-gradient(ellipse at 50% 37%, rgba(91, 137, 164, .24), transparent 35%), linear-gradient(145deg, #182832, #0c141a 70%); opacity: 1; transition: opacity .38s ease, visibility .38s ease; }
-    .splash-screen::before, .splash-screen::after { position: absolute; width: min(76vw, 740px); height: 1px; content: ""; background: linear-gradient(90deg, transparent, rgba(156, 191, 210, .32), transparent); }
-    .splash-screen::before { top: 24%; }
-    .splash-screen::after { bottom: 24%; }
+    .splash-screen { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; overflow: hidden; color: #f4f8fa; background: radial-gradient(ellipse at 50% 43%, rgba(71, 121, 157, .24), transparent 35%), linear-gradient(145deg, #182832, #0c141a 70%); opacity: 1; transition: opacity .38s ease, visibility .38s ease; }
+    .splash-screen::before, .splash-screen::after { position: absolute; left: 50%; width: min(76vw, 740px); height: 1px; content: ""; background: linear-gradient(90deg, transparent, rgba(156, 191, 210, .32), transparent); transform: translateX(-50%); }
+    .splash-screen::before { top: 22%; }
+    .splash-screen::after { bottom: 22%; }
     .splash-screen.is-leaving { visibility: hidden; opacity: 0; pointer-events: none; }
     .splash-content { position: relative; z-index: 1; display: grid; justify-items: center; text-align: center; transform: translateY(-8px); }
-    .splash-monogram { width: clamp(92px, 19vw, 132px); height: auto; overflow: visible; filter: drop-shadow(0 9px 24px rgba(72, 133, 166, .22)); }
-    .splash-ring { fill: rgba(255,255,255,.018); stroke: rgba(176, 207, 223, .34); stroke-width: 1; animation: splash-ring-in .8s ease-out both; transform-origin: center; }
-    .splash-r { fill: none; stroke: url(#splash-metal); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 250; stroke-dashoffset: 250; animation: splash-draw-twice 1.75s cubic-bezier(.66,0,.24,1) .18s forwards; }
-    .splash-brand { margin-top: 21px; font: 700 clamp(25px, 4.6vw, 34px)/1 var(--font-display); letter-spacing: .2px; }
+    .splash-monogram { width: clamp(168px, 32vw, 220px); height: auto; overflow: visible; filter: drop-shadow(0 12px 38px rgba(71, 151, 199, .55)); }
+    .splash-disc { fill: url(#splash-disc); stroke: rgba(189, 216, 231, .3); stroke-width: 1; }
+    .splash-ring { fill: none; stroke: url(#splash-ring-metal); stroke-width: 1.5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: splash-ring-draw .95s cubic-bezier(.2,.72,.2,1) both; transform-origin: center; }
+    .splash-r-glow { fill: none; stroke: #66a9d0; stroke-width: 22; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; opacity: .48; filter: blur(2px); animation: splash-r-draw 1.35s cubic-bezier(.55,.08,.25,1) .3s 3 forwards; }
+    .splash-r { fill: none; stroke: #f4fbff; stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: splash-r-draw 1.35s cubic-bezier(.55,.08,.25,1) .3s 3 forwards; }
+    .splash-brand { margin-top: 18px; font: 700 clamp(25px, 4.6vw, 34px)/1 var(--font-display); letter-spacing: .2px; opacity: 0; animation: splash-rise .55s ease 2.7s forwards; }
     .splash-brand span { color: #9dbbd0; }
-    .splash-caption { margin: 10px 0 0; color: #a9bac4; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0; animation: splash-rise .55s ease 2s forwards; }
-    .splash-loader { width: 88px; height: 2px; overflow: hidden; margin-top: 31px; background: rgba(210, 230, 240, .16); }
-    .splash-loader span { width: 45%; height: 100%; display: block; background: linear-gradient(90deg, #7198b1, #d2e3ec); transform: translateX(-110%); animation: splash-load 1.35s ease-in-out .2s infinite; }
-    @keyframes splash-draw-twice { 0% { stroke-dashoffset: 250; } 39% { stroke-dashoffset: 0; } 50% { stroke-dashoffset: 250; } 92% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 0; } }
-    @keyframes splash-ring-in { from { opacity: 0; transform: scale(.86); } to { opacity: 1; transform: scale(1); } }
-    @keyframes splash-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
+    .splash-caption { margin: 10px 0 0; color: #a9bac4; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0; animation: splash-rise .55s ease 2.9s forwards; }
+    .splash-loader { width: 92px; height: 2px; overflow: hidden; margin-top: 29px; border-radius: 2px; background: rgba(210, 230, 240, .16); opacity: 0; animation: splash-rise .45s ease 3s forwards; }
+    .splash-loader span { width: 42%; height: 100%; display: block; border-radius: inherit; background: linear-gradient(90deg, #47799d, #b9d3e2); transform: translateX(-110%); animation: splash-load 1.3s ease-in-out .2s infinite; }
+    @keyframes splash-r-draw { to { stroke-dashoffset: 0; } }
+    @keyframes splash-ring-draw { 0% { opacity: 0; transform: scale(.88); stroke-dashoffset: 1; } 35% { opacity: 1; } 100% { opacity: 1; transform: scale(1); stroke-dashoffset: 0; } }
+    @keyframes splash-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes splash-load { 55% { transform: translateX(125%); } 100% { transform: translateX(245%); } }
     button, input { font: inherit; }
     button, a { -webkit-tap-highlight-color: transparent; }
@@ -634,9 +636,15 @@
   <section class="splash-screen" id="splash-screen" role="dialog" aria-modal="true" aria-label="Opening Rektina.sub">
     <div class="splash-content">
       <svg class="splash-monogram" viewBox="0 0 120 120" role="img" aria-label="R">
-        <defs><linearGradient id="splash-metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9e8f0"/><stop offset=".42" stop-color="#87aec5"/><stop offset="1" stop-color="#3b7190"/></linearGradient></defs>
-        <circle class="splash-ring" cx="60" cy="60" r="51"/>
-        <path class="splash-r" d="M39 91V29h27c17 0 25 9 25 22S83 74 66 74H40m28 0 23 17"/>
+        <defs>
+          <linearGradient id="splash-metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e7f2f8"/><stop offset=".42" stop-color="#8fb6ce"/><stop offset="1" stop-color="#47799d"/></linearGradient>
+          <linearGradient id="splash-disc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#345a73"/><stop offset="1" stop-color="#142733"/></linearGradient>
+          <linearGradient id="splash-ring-metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d6e8f2"/><stop offset=".55" stop-color="#7198b1"/><stop offset="1" stop-color="#315f7b"/></linearGradient>
+        </defs>
+        <circle class="splash-disc" cx="60" cy="60" r="45"/>
+        <circle class="splash-ring" cx="60" cy="60" r="53" pathLength="1"/>
+        <path class="splash-r-glow" d="M39 91V29h27c17 0 25 9 25 22S83 74 66 74H40m28 0 23 17" pathLength="1"/>
+        <path class="splash-r" d="M39 91V29h27c17 0 25 9 25 22S83 74 66 74H40m28 0 23 17" pathLength="1"/>
       </svg>
       <div class="splash-brand">Rektina<span>.sub</span></div>
       <p class="splash-caption">Everyday essentials. Built to move.</p>
@@ -932,7 +940,7 @@
     </section>
   </main>
   <footer>
-    <div class="footer-inner shell"><a class="footer-brand" href="#home" aria-label="Rektina.sub home"><img class="brand-logo" src="../WhatsApp%20Image%202026-10-16%20at%2007.07.35.jpeg" alt="Rektina.sub"></a><span>Digital essentials and messaging infrastructure.</span><nav class="legal-footer-links" aria-label="Legal"><a href="#terms" data-legal-page="terms">Terms of Service</a><a href="#privacy" data-legal-page="privacy">Privacy Policy</a></nav><span>© 2026 Rektina.sub</span></div>
+    <div class="footer-inner shell"><span>© 2026 Rektina.sub</span></div>
   </footer>
 
   <script>
@@ -1420,7 +1428,7 @@
       document.body.classList.remove("splash-active");
       window.setTimeout(() => { splashScreen.hidden = true; }, 400);
     }
-    window.setTimeout(dismissSplash, 3000);
+    window.setTimeout(dismissSplash, 5500);
   </script>
 </body>
 </html>

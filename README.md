@@ -17,6 +17,23 @@ The differentiator is that this is not only a VTU storefront. It combines consum
 4. Open `docs/` to browse the documents. Markdown preview: `Ctrl+Shift+V` (Windows/Linux) or `Cmd+Shift+V` (macOS).
 5. Start with `docs/00-master-project-guide.md`, then `docs/01-prd.md`.
 
+## Run the React prototype
+
+The interactive Rektina.sub prototype is available as a React app. Splash, landing,
+sign-in, sign-up and onboarding are rendered from `prototype.html`; the signed-in
+dashboard is implemented in React with service purchases, history, wallet, profile,
+settings, developer email-domain setup and a confirmed logout back to sign-in.
+
+1. Install dependencies with `npm install`.
+2. Start the app with `npm run dev`.
+3. Build it with `npm run build`.
+
+Dashboard actions are local previews, not live payments or email delivery. Add the
+domain you own in **Email API & domains**; the exact SPF/DKIM records and verification
+steps require an email provider connection. The app intentionally does not invent
+DNS records or claim verification. `prototype.html` provides the shared splash, landing, sign-in, sign-up and onboarding
+markup used by the React app.
+
 ## Documentation index
 
 | File | Purpose |
