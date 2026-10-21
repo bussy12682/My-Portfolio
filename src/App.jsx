@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import prototypeHTML from "../prototype.html?raw";
-import logoURL from "../../WhatsApp Image 2026-10-16 at 07.07.35.jpeg";
+import logoURL from "./assets/rektina-logo.jpeg";
 import DashboardExperience from "./Dashboard.jsx";
 
 const sourceDocument = new DOMParser().parseFromString(prototypeHTML, "text/html");
