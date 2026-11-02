@@ -1,2 +1,12 @@
 node_modules/
+.next/
+out/
 dist/
+.turbo/
+*.tsbuildinfo
+.env
+.env*.local
+.DS_Store
+
+# Design reference screenshots (~32MB of PNGs). Kept locally; see docs/design-system/design-reference.md.
+apps/web/design-ref/

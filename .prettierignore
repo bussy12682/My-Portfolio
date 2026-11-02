@@ -1,0 +1,8 @@
+node_modules
+.next
+.turbo
+out
+dist
+bun.lock
+*.docx
+vtu_developer_infrastructure_vscode
