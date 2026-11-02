@@ -34,11 +34,11 @@ steps require an email provider connection. The app intentionally does not inven
 DNS records or claim verification. `prototype.html` provides the shared splash, landing, sign-in, sign-up and onboarding
 markup used by the React app.
 
-## Deploy to GitHub Pages
+## Deploy to Vercel
 
-Pushing to `main` builds this app and deploys it to
-https://bussy12682.github.io/My-Portfolio/. The workflow publishes `react.html` as
-the site entry page and configures Vite assets for the repository's Pages path.
+The repository is configured to build with Vite and serve `react.html` as the home
+page using `vercel.json`. Pushes to `main` deploy through the linked Vercel project.
+Live preview: https://my-portfolio-rho-pied-gb13pqjrfc.vercel.app/
 
 ## Documentation index
 
