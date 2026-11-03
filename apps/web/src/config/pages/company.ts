@@ -138,9 +138,6 @@ export const aboutPage = {
   },
 };
 
-const pendingMessage =
-  "Accounts open at launch. This form isn't connected yet, so nothing was sent.";
-
 export const signInPage = {
   meta: { title: "Log in", description: "Log in to REKTINA.sub." },
   form: {
@@ -157,7 +154,7 @@ export const signInPage = {
       { name: "password", label: "Password", type: "password", autoComplete: "current-password" },
     ],
     submitLabel: "Log in",
-    pendingMessage,
+    apiEndpoint: "/api/auth/sign-in",
     switchPrompt: {
       text: "New to REKTINA?",
       link: { label: "Create an account", href: "/sign-up" },
@@ -185,11 +182,12 @@ export const signUpPage = {
         label: "Password",
         type: "password",
         autoComplete: "new-password",
-        hint: "At least 8 characters.",
+        minLength: 12,
+        hint: "At least 12 characters.",
       },
     ],
     submitLabel: "Create account",
-    pendingMessage,
+    apiEndpoint: "/api/auth/sign-up",
     switchPrompt: { text: "Already have an account?", link: { label: "Log in", href: "/sign-in" } },
   } satisfies AuthFormProps,
 };
