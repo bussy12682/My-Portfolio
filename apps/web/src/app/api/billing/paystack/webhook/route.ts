@@ -1,6 +1,6 @@
 import { ApiError, errorResponse } from "@/lib/server/errors";
 import { verifyPaystackSignature, verifyPaystackTransaction } from "@/lib/server/paystack";
-import { databaseRequest, databaseUrl } from "@/lib/server/supabase";
+import { database } from "@/lib/server/database";
 import { creditVerifiedTopup } from "../../verify/route";
 
 type WebhookEvent = {
@@ -31,13 +31,10 @@ export async function POST(request: Request) {
     if (!reference || !/^permitt_[0-9a-f]{32}$/i.test(reference)) {
       throw new ApiError(400, "invalid_reference", "The payment reference is invalid.");
     }
-    const topups = await databaseRequest<Topup[]>(
-      databaseUrl("topups", {
-        select: "reference,owner_id,status",
-        reference: `eq.${reference}`,
-        limit: "1",
-      }),
-    );
+    const sql = database();
+    const topups = await sql<Topup[]>`
+      select reference, owner_id, status from topups where reference = ${reference} limit 1
+    `;
     const topup = topups[0];
     if (!topup || topup.status === "credited") return Response.json({ received: true });
 

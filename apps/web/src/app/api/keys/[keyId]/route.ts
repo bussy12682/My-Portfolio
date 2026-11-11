@@ -1,6 +1,6 @@
 import { ApiError, errorResponse } from "@/lib/server/errors";
 import { requireSameOrigin } from "@/lib/server/http";
-import { databaseRequest, databaseUrl } from "@/lib/server/supabase";
+import { database } from "@/lib/server/database";
 import { requireUser, requireVerifiedEmail } from "@/lib/server/session";
 
 type RouteContext = { params: Promise<{ keyId: string }> };
@@ -16,20 +16,14 @@ export async function DELETE(request: Request, context: RouteContext) {
       throw new ApiError(400, "invalid_key", "Choose a valid API key.");
     }
 
-    const updated = await databaseRequest<ApiKeyRow[]>(
-      databaseUrl("api_keys", {
-        id: `eq.${keyId}`,
-        owner_id: `eq.${user.id}`,
-        revoked_at: "is.null",
-        select: "id",
-      }),
-      {
-        method: "PATCH",
-        headers: { Prefer: "return=representation" },
-        body: JSON.stringify({ revoked_at: new Date().toISOString() }),
-      },
-    );
-    if (!updated[0]) throw new ApiError(404, "key_not_found", "An active API key with that ID was not found.");
+    const sql = database();
+    const updated = await sql<ApiKeyRow[]>`
+      update api_keys set revoked_at = now()
+      where id = ${keyId} and owner_id = ${user.id} and revoked_at is null
+      returning id
+    `;
+    if (!updated[0])
+      throw new ApiError(404, "key_not_found", "An active API key with that ID was not found.");
     return Response.json({ ok: true });
   } catch (error) {
     return errorResponse(error);

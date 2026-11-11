@@ -155,6 +155,7 @@ export const signInPage = {
     ],
     submitLabel: "Log in",
     apiEndpoint: "/api/auth/sign-in",
+    passwordResetHref: "/forgot-password",
     switchPrompt: {
       text: "New to REKTINA?",
       link: { label: "Create an account", href: "/sign-up" },
@@ -188,6 +189,7 @@ export const signUpPage = {
     ],
     submitLabel: "Create account",
     apiEndpoint: "/api/auth/sign-up",
+    verificationResendHref: "/resend-verification",
     switchPrompt: { text: "Already have an account?", link: { label: "Log in", href: "/sign-in" } },
   } satisfies AuthFormProps,
 };

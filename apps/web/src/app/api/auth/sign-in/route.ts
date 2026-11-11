@@ -1,18 +1,8 @@
 import { ApiError, errorResponse } from "@/lib/server/errors";
 import { readJson, requireSameOrigin, stringField } from "@/lib/server/http";
 import { setSession } from "@/lib/server/session";
-import { authRequest } from "@/lib/server/supabase";
-
-type AuthResponse = {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  user: {
-    id: string;
-    email?: string;
-    email_confirmed_at?: string | null;
-  };
-};
+import { database } from "@/lib/server/database";
+import { verifyPassword } from "@/lib/server/password";
 
 export async function POST(request: Request) {
   try {
@@ -24,23 +14,20 @@ export async function POST(request: Request) {
       throw new ApiError(400, "invalid_email", "Enter a valid email address.");
     }
 
-    const session = await authRequest<AuthResponse>("token?grant_type=password", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    if (!session.access_token || !session.refresh_token || !session.user || !session.user.email) {
+    const sql = database();
+    const users = await sql<
+      { id: string; password_hash: string; email_verified_at: string | null }[]
+    >`
+      select id, password_hash, email_verified_at from users where email = ${email} limit 1
+    `;
+    const user = users[0];
+    if (!user || !(await verifyPassword(password, user.password_hash))) {
       throw new ApiError(401, "authentication_failed", "Invalid email or password.");
     }
-    await setSession({
-      access_token: session.access_token,
-      refresh_token: session.refresh_token,
-      expires_in: session.expires_in ?? 3600,
-      user: {
-        id: session.user.id,
-        email: session.user.email,
-        email_confirmed_at: session.user.email_confirmed_at ?? null,
-      },
-    });
+    if (!user.email_verified_at) {
+      throw new ApiError(403, "email_not_verified", "Verify your email address before signing in.");
+    }
+    await setSession(user.id);
     return Response.json({ ok: true, redirectTo: "/dashboard" });
   } catch (error) {
     return errorResponse(error);

@@ -48,33 +48,55 @@ commands are in `apps/web/vercel.json`.
 ### Enabling the Permitt backend
 
 The account forms and developer dashboard use the Next.js API routes in `apps/web`.
-Before they can access real accounts or money, apply
-[`supabase/migrations/202611030001_permitt_backend.sql`](./supabase/migrations/202611030001_permitt_backend.sql)
-to the Supabase project and set the variables from [`.env.example`](./.env.example)
-in the Vercel project's Production (and Preview, if needed) environment:
+Create a Neon database and apply
+[`neon/migrations/202611110001_initial_backend.sql`](./neon/migrations/202611110001_initial_backend.sql)
+and then
+[`neon/migrations/202611110002_vtu_purchases.sql`](./neon/migrations/202611110002_vtu_purchases.sql)
+to it using Neon SQL Editor or `psql`. Set the variables from
+[`.env.example`](./.env.example) in the Vercel project's Production environment:
 
 - `NEXT_PUBLIC_SITE_URL`
-- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`
-- `SENDGRID_API_KEY`, `SENDGRID_FROM_EMAIL`, and `EMAIL_PRICE_KOBO`
+- `DATABASE_URL`
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `EMAIL_PRICE_KOBO`
 - `PAYSTACK_SECRET_KEY`, `PAYSTACK_MIN_TOPUP_NGN`, and `PAYSTACK_MAX_TOPUP_NGN`
+- `TELECOM_ABODE_API_KEY` for live airtime and data purchases
 
-`EMAIL_DAILY_LIMIT` and `SENDGRID_FROM_NAME` are optional and have defaults. Keep
-service-role and provider secrets server-side; do not use a `NEXT_PUBLIC_` prefix
-for them.
+`EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME` are optional and have defaults. Verify
+the sender domain in Resend before sending. Keep all credentials server-side; do
+not use a `NEXT_PUBLIC_` prefix for secrets.
 
-For local development, put the values in `apps/web/.env.local`. In Supabase's
-Authentication URL configuration, allow the callback URL above. Set the
-confirmation email template's action link to
-`{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup` so the
-server callback can verify the token hash. Verify the sender address in SendGrid
-and configure the Paystack webhook URL as
+For local development, put the values in `apps/web/.env.local`. Resend sends
+account verification, password reset and developer email messages. Configure
+the Paystack webhook URL as
 `${NEXT_PUBLIC_SITE_URL}/api/billing/paystack/webhook`.
 
 The dashboard supports account sign-in/up, project and API-key management,
-Paystack top-ups, wallet balance, and recent email activity. Email sends are made
+Paystack top-ups, wallet balance, airtime and data purchases through Telecom
+Abode, and recent email activity. Purchases use Telecom Abode's live catalog and
+are charged at the listed price. Email sends are made
 by calling `POST /api/v1/emails` with a project API key and an `Idempotency-Key`
 header. The API key secret is only shown at creation; store it securely on your
 application server, never in browser code.
+
+VTU purchases require a verified account and sufficient wallet balance. Each
+purchase is reserved atomically and sent to Telecom Abode with a stable request
+ID. Confirmed provider failures are refunded; timeouts and unclear responses
+remain reserved as `unknown` until checked with the provider's transaction
+status endpoint. Do not retry an uncertain purchase by starting another one.
+No automatic provider failover is performed.
+
+Masub purchases are not enabled: its API documentation is not publicly
+accessible, so its authentication, catalog, purchase, and status contract cannot
+be verified. Do not add a Masub key to the app or route purchases to it until
+the provider's official integration documentation is available.
+
+The email API records Resend acceptance as `sent`; this does not assert inbox
+delivery. The old Supabase migration is retained as historical reference only
+and must not be applied to Neon. This creates a fresh Neon schema; it does not
+import existing Supabase rows or accounts. Existing Supabase Auth password
+hashes cannot be transferred by this migration. Complete and verify a separate
+account/data backfill and password-reset enrollment before switching existing
+users to this backend.
 
 ## Adding UI components
 

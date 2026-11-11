@@ -1,7 +1,7 @@
 import { ApiError, errorResponse } from "@/lib/server/errors";
 import { readJson, requireSameOrigin, stringField } from "@/lib/server/http";
 import { verifyPaystackTransaction } from "@/lib/server/paystack";
-import { databaseRequest, databaseUrl } from "@/lib/server/supabase";
+import { database } from "@/lib/server/database";
 import { requireUser, requireVerifiedEmail } from "@/lib/server/session";
 
 type Topup = {
@@ -12,18 +12,16 @@ type Topup = {
 };
 
 async function creditVerifiedTopup(ownerId: string, reference: string) {
-  const rows = await databaseRequest<Topup[]>(
-    databaseUrl("topups", {
-      select: "id,reference,amount_kobo,status",
-      reference: `eq.${reference}`,
-      owner_id: `eq.${ownerId}`,
-      limit: "1",
-    }),
-  );
+  const sql = database();
+  const rows = await sql<Topup[]>`
+    select id, reference, amount_kobo, status from topups
+    where reference = ${reference} and owner_id = ${ownerId} limit 1
+  `;
   const topup = rows[0];
   if (!topup) throw new ApiError(404, "topup_not_found", "The top-up was not found.");
   if (topup.status === "credited") return { reference, status: "credited" as const };
-  if (topup.status !== "pending") throw new ApiError(409, "topup_not_pending", "This top-up is no longer pending.");
+  if (topup.status !== "pending")
+    throw new ApiError(409, "topup_not_pending", "This top-up is no longer pending.");
 
   const transaction = await verifyPaystackTransaction(reference);
   if (
@@ -36,14 +34,11 @@ async function creditVerifiedTopup(ownerId: string, reference: string) {
     throw new ApiError(409, "payment_not_verified", "The payment is not yet verified.");
   }
 
-  await databaseRequest<boolean[]>("rpc/credit_paystack_topup", {
-    method: "POST",
-    body: JSON.stringify({
-      p_reference: reference,
-      p_provider_transaction_id: String(transaction.id),
-      p_amount_kobo: transaction.amount,
-    }),
-  });
+  await sql`
+    select credit_paystack_topup(
+      ${reference}, ${String(transaction.id)}, ${transaction.amount}
+    )
+  `;
   return { reference, status: "credited" as const };
 }
 

@@ -8,23 +8,6 @@ function required(name: string) {
   return value;
 }
 
-export function supabaseUrl() {
-  const value = required("SUPABASE_URL").replace(/\/+$/, "");
-  const url = new URL(value);
-  if (url.protocol !== "https:" && url.hostname !== "localhost") {
-    throw new ApiError(503, "service_not_configured", "SUPABASE_URL must use HTTPS.");
-  }
-  return value;
-}
-
-export function supabaseAnonKey() {
-  return required("SUPABASE_ANON_KEY");
-}
-
-export function supabaseServiceRoleKey() {
-  return required("SUPABASE_SERVICE_ROLE_KEY");
-}
-
 export function siteUrl() {
   const value = required("NEXT_PUBLIC_SITE_URL").replace(/\/+$/, "");
   const url = new URL(value);
@@ -66,20 +49,20 @@ function ngnLimitKobo(name: string) {
   return value * 100;
 }
 
-export function sendGridApiKey() {
-  return required("SENDGRID_API_KEY");
+export function resendApiKey() {
+  return required("RESEND_API_KEY");
 }
 
-export function sendGridFrom() {
-  const value = required("SENDGRID_FROM_EMAIL").toLowerCase();
+export function resendFromEmail() {
+  const value = required("RESEND_FROM_EMAIL").toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-    throw new ApiError(503, "service_not_configured", "SENDGRID_FROM_EMAIL is not a valid address.");
+    throw new ApiError(503, "service_not_configured", "RESEND_FROM_EMAIL is not a valid address.");
   }
   return value;
 }
 
-export function sendGridFromName() {
-  return process.env.SENDGRID_FROM_NAME?.trim() || "Permitt by REKTINA";
+export function resendFromName() {
+  return process.env.RESEND_FROM_NAME?.trim() || "Permitt by REKTINA";
 }
 
 export function paystackSecretKey() {

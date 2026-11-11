@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { ApiError, errorResponse } from "@/lib/server/errors";
 import { emailDailyLimit } from "@/lib/server/env";
 import { readJson, requireSameOrigin, stringField } from "@/lib/server/http";
-import { databaseRequest, databaseUrl } from "@/lib/server/supabase";
+import { database } from "@/lib/server/database";
 import { requireUser, requireVerifiedEmail } from "@/lib/server/session";
 
 type Project = { id: string };
@@ -27,14 +27,12 @@ export async function GET(request: Request) {
     const projectId = new URL(request.url).searchParams.get("projectId") ?? "";
     if (!isUuid(projectId)) throw new ApiError(400, "invalid_project", "Choose a valid project.");
 
-    const rows = await databaseRequest<ApiKeyRow[]>(
-      databaseUrl("api_keys", {
-        select: "id,project_id,name,key_prefix,daily_limit,last_used_at,revoked_at,created_at",
-        owner_id: `eq.${user.id}`,
-        project_id: `eq.${projectId}`,
-        order: "created_at.desc",
-      }),
-    );
+    const sql = database();
+    const rows = await sql<ApiKeyRow[]>`
+      select id, project_id, name, key_prefix, daily_limit, last_used_at, revoked_at, created_at
+      from api_keys where owner_id = ${user.id} and project_id = ${projectId}
+      order by created_at desc
+    `;
     return Response.json({ keys: rows });
   } catch (error) {
     return errorResponse(error);
@@ -51,33 +49,22 @@ export async function POST(request: Request) {
     const name = stringField(body, "name", { min: 2, max: 80 })!;
     if (!isUuid(projectId)) throw new ApiError(400, "invalid_project", "Choose a valid project.");
 
-    const projects = await databaseRequest<Project[]>(
-      databaseUrl("projects", {
-        select: "id",
-        id: `eq.${projectId}`,
-        owner_id: `eq.${user.id}`,
-        limit: "1",
-      }),
-    );
+    const sql = database();
+    const projects = await sql<Project[]>`
+      select id from projects where id = ${projectId} and owner_id = ${user.id} limit 1
+    `;
     if (!projects[0]) throw new ApiError(404, "project_not_found", "The project was not found.");
 
     const rawKey = `rk_live_${randomBytes(32).toString("base64url")}`;
     const keyHash = createHash("sha256").update(rawKey).digest("hex");
-    const rows = await databaseRequest<ApiKeyRow[]>("api_keys?select=id,project_id,name,key_prefix,daily_limit,last_used_at,revoked_at,created_at", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: JSON.stringify({
-        id: randomUUID(),
-        project_id: projectId,
-        owner_id: user.id,
-        name,
-        key_prefix: rawKey.slice(0, 15),
-        key_hash: keyHash,
-        daily_limit: emailDailyLimit(),
-      }),
-    });
+    const rows = await sql<ApiKeyRow[]>`
+      insert into api_keys (id, project_id, owner_id, name, key_prefix, key_hash, daily_limit)
+      values (${randomUUID()}, ${projectId}, ${user.id}, ${name}, ${rawKey.slice(0, 15)}, ${keyHash}, ${emailDailyLimit()})
+      returning id, project_id, name, key_prefix, daily_limit, last_used_at, revoked_at, created_at
+    `;
     const apiKey = rows[0];
-    if (!apiKey) throw new ApiError(503, "database_unavailable", "The API key could not be created.");
+    if (!apiKey)
+      throw new ApiError(503, "database_unavailable", "The API key could not be created.");
     return Response.json({ key: apiKey, secret: rawKey }, { status: 201 });
   } catch (error) {
     return errorResponse(error);

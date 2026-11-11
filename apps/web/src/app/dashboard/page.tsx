@@ -5,6 +5,7 @@ import { Input } from "@rektinasub/ui/components/ui/input";
 import { Label } from "@rektinasub/ui/components/ui/label";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { VtuPurchases } from "./vtu-purchases";
 
 type Project = { id: string; name: string; created_at: string };
 type ApiKey = {
@@ -337,6 +338,11 @@ export default function DashboardPage() {
         </article>
       </section>
 
+      <VtuPurchases
+        emailVerified={Boolean(data?.user.emailVerified)}
+        onPurchaseComplete={loadDashboard}
+      />
+
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <section className="rounded-lg border bg-card p-5 sm:p-6">
           <h2 className="text-xl font-semibold">Projects</h2>
@@ -462,7 +468,7 @@ export default function DashboardPage() {
   }'`}</code>
         </pre>
         <p className="mt-3 text-xs text-muted-foreground">
-          Requests are billed from your wallet. Configure SendGrid and your sender address before
+          Requests are billed from your wallet. Configure Resend and your sender address before
           sending.
         </p>
       </section>

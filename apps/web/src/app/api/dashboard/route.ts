@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { ApiError, errorResponse } from "@/lib/server/errors";
-import { databaseRequest, databaseUrl } from "@/lib/server/supabase";
+import { database } from "@/lib/server/database";
 import { requireUser } from "@/lib/server/session";
 
 type Wallet = { balance_kobo: string | number; currency: string };
@@ -34,45 +34,20 @@ export async function GET() {
   await connection();
   try {
     const user = await requireUser();
-    const owner = `eq.${user.id}`;
+    const sql = database();
     const [wallets, projects, keys, messages, topups] = await Promise.all([
-      databaseRequest<Wallet[]>(
-        databaseUrl("wallets", {
-          select: "balance_kobo,currency",
-          owner_id: owner,
-          limit: "1",
-        }),
-      ),
-      databaseRequest<Project[]>(
-        databaseUrl("projects", {
-          select: "id,name,created_at",
-          owner_id: owner,
-          order: "created_at.asc",
-        }),
-      ),
-      databaseRequest<ApiKey[]>(
-        databaseUrl("api_keys", {
-          select: "id,project_id,name,key_prefix,daily_limit,last_used_at,revoked_at,created_at",
-          owner_id: owner,
-          order: "created_at.desc",
-        }),
-      ),
-      databaseRequest<EmailMessage[]>(
-        databaseUrl("email_messages", {
-          select: "id,recipient,subject,status,amount_kobo,created_at",
-          owner_id: owner,
-          order: "created_at.desc",
-          limit: "10",
-        }),
-      ),
-      databaseRequest<Topup[]>(
-        databaseUrl("topups", {
-          select: "reference,amount_kobo,status,created_at",
-          owner_id: owner,
-          order: "created_at.desc",
-          limit: "10",
-        }),
-      ),
+      sql<Wallet[]>`select balance_kobo, currency from wallets where owner_id = ${user.id} limit 1`,
+      sql<
+        Project[]
+      >`select id, name, created_at from projects where owner_id = ${user.id} order by created_at asc`,
+      sql<
+        ApiKey[]
+      >`select id, project_id, name, key_prefix, daily_limit, last_used_at, revoked_at, created_at
+        from api_keys where owner_id = ${user.id} order by created_at desc`,
+      sql<EmailMessage[]>`select id, recipient, subject, status, amount_kobo, created_at
+        from email_messages where owner_id = ${user.id} order by created_at desc limit 10`,
+      sql<Topup[]>`select reference, amount_kobo, status, created_at
+        from topups where owner_id = ${user.id} order by created_at desc limit 10`,
     ]);
 
     const wallet = wallets[0];

@@ -31,12 +31,13 @@ export type AuthFormProps = {
   switchPrompt?: { text: string; link: LinkItem };
   /** Small print under the button, e.g. the terms line. */
   footnote?: string;
+  passwordResetHref?: string;
+  verificationResendHref?: string;
   className?: string;
 };
 
 /**
- * A sign-in / sign-up panel: 32px title, 48px fields, a full-width 48px primary button. UI only:
- * submitting validates the fields and shows `pendingMessage` instead of calling a backend.
+ * A sign-in / sign-up panel with consistent field sizing and JSON API submission.
  */
 export function AuthForm({
   title,
@@ -46,6 +47,8 @@ export function AuthForm({
   apiEndpoint,
   switchPrompt,
   footnote,
+  passwordResetHref,
+  verificationResendHref,
   className,
 }: AuthFormProps) {
   const [message, setMessage] = useState("");
@@ -153,6 +156,22 @@ export function AuthForm({
             <InfoIcon aria-hidden className="mt-0.5 size-4 shrink-0 text-orbital" />
             {message}
           </p>
+        )}
+        {passwordResetHref && (
+          <SmartLink
+            href={passwordResetHref}
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
+            Forgot your password?
+          </SmartLink>
+        )}
+        {verificationResendHref && (
+          <SmartLink
+            href={verificationResendHref}
+            className="text-sm text-muted-foreground underline underline-offset-4"
+          >
+            Resend verification email
+          </SmartLink>
         )}
       </form>
       {footnote && <p className="mt-5 text-xs leading-5 text-muted-foreground">{footnote}</p>}
