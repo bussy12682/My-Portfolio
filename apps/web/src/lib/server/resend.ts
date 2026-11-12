@@ -44,6 +44,13 @@ export async function sendEmail(input: {
     (ResendResult & { message?: string; name?: string }) | null;
   if (!response.ok) {
     console.error("Resend request failed", { status: response.status, name: result?.name });
+    if (response.status === 403 && result?.name === "validation_error") {
+      throw new ApiError(
+        502,
+        "email_sender_not_verified",
+        "Resend rejected the sender address. Use RESEND_FROM_EMAIL at a domain verified in Resend, then redeploy. If you already signed up, request a new verification email after the sender is fixed.",
+      );
+    }
     if (response.status >= 500) {
       throw new ApiError(
         503,
