@@ -6,6 +6,7 @@ import { Label } from "@rektinasub/ui/components/ui/label";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { VtuPurchases } from "./vtu-purchases";
+import { supportLink } from "@/config/links";
 
 type Project = { id: string; name: string; created_at: string };
 type ApiKey = {
@@ -274,9 +275,17 @@ export default function DashboardPage() {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">{data?.user.email}</p>
         </div>
-        <Button type="button" variant="outline" onClick={signOut} disabled={busy === "signout"}>
-          {busy === "signout" ? "Signing out…" : "Sign out"}
-        </Button>
+        <div className="flex items-center gap-4">
+          <a
+            href={supportLink.href}
+            className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+          >
+            Customer support
+          </a>
+          <Button type="button" variant="outline" onClick={signOut} disabled={busy === "signout"}>
+            {busy === "signout" ? "Signing out…" : "Sign out"}
+          </Button>
+        </div>
       </header>
 
       {!data?.user.emailVerified && (

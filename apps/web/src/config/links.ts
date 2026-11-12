@@ -1,5 +1,11 @@
 import type { ActionLink, LinkItem } from "@rektinasub/ui/lib/links";
 
+export const supportEmail = "rktsub.support@gmail.com";
+export const supportLink = {
+  label: "Email support",
+  href: `mailto:${supportEmail}`,
+} satisfies LinkItem;
+
 /**
  * Shared destinations, so every page points at the same routes with the same labels.
  * A link is `planned` until its page exists; planned links are hidden in production.
@@ -15,7 +21,7 @@ export const routes = {
   about: { label: "About us", href: "/about" },
   docs: { label: "Read the docs", href: "/docs", status: "planned" },
   status: { label: "Service status", href: "/status", status: "planned" },
-  contact: { label: "Contact us", href: "/contact", status: "planned" },
+  contact: supportLink,
 } satisfies Record<string, LinkItem>;
 
 export const getStarted: ActionLink = routes.signUp;

@@ -1,12 +1,14 @@
 import type { FooterConfig } from "@rektinasub/ui/components/footer";
+import { supportLink } from "./links";
 import { siteConfig } from "./site";
 
-// Flip a link's `status` when its page ships. Planned links and contacts are hidden in production.
+// Flip a link's `status` when its page ships. Planned links are hidden in production.
 export const footerConfig: FooterConfig = {
   tagline: siteConfig.tagline,
   statement: "Everyday top-ups and production email, from one account.",
   contacts: [
     { label: "Get started", link: { label: "Create an account", href: "/sign-up" } },
+    { label: "Customer support", link: supportLink },
     { label: "Developers", link: { label: "Read the docs", href: "/docs", status: "planned" } },
   ],
   groups: [
@@ -29,11 +31,7 @@ export const footerConfig: FooterConfig = {
     },
     {
       title: "Company",
-      links: [
-        { label: "About us", href: "/about" },
-        { label: "Contact us", href: "/contact", status: "planned" },
-        { label: "FAQs", href: "/#faq" },
-      ],
+      links: [{ label: "About us", href: "/about" }, supportLink, { label: "FAQs", href: "/#faq" }],
     },
   ],
   secondaryGroups: [

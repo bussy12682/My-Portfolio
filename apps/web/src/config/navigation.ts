@@ -11,6 +11,7 @@ import {
   SmartphoneIcon,
   WifiIcon,
 } from "lucide-react";
+import { routes } from "./links";
 import { media } from "./media";
 
 // Flip a link's status to "live" (or delete the field) when its page ships.
@@ -96,7 +97,7 @@ export const navigationConfig: NavigationConfig = {
       label: "Company",
       items: [
         { label: "About Us", href: "/about", icon: Building2Icon },
-        { label: "Contact Us", href: "/contact", icon: PhoneIcon, status: "planned" },
+        { label: "Support Email", href: routes.contact.href, icon: PhoneIcon },
         { label: "FAQs", href: "/#faq", icon: CircleHelpIcon },
       ],
     },

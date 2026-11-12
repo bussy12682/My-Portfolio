@@ -53,7 +53,9 @@ Create a Neon database and apply
 and then
 [`neon/migrations/202611110002_vtu_purchases.sql`](./neon/migrations/202611110002_vtu_purchases.sql)
 to it using Neon SQL Editor or `psql`. Set the variables from
-[`.env.example`](./.env.example) in the Vercel project's Production environment:
+[`.env.example`](./.env.example) in the Vercel project's Production environment.
+The example file contains placeholders only; enter actual values directly into
+Vercel's encrypted Environment Variables settings and never commit credentials:
 
 - `NEXT_PUBLIC_SITE_URL`
 - `DATABASE_URL`
@@ -64,6 +66,9 @@ to it using Neon SQL Editor or `psql`. Set the variables from
 `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME` are optional and have defaults. Verify
 the sender domain in Resend before sending. Keep all credentials server-side; do
 not use a `NEXT_PUBLIC_` prefix for secrets.
+
+The support email shown in the site navigation and footer is
+`rktsub.support@gmail.com`.
 
 For local development, put the values in `apps/web/.env.local`. Resend sends
 account verification, password reset and developer email messages. Configure
