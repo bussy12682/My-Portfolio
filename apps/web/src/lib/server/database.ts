@@ -12,7 +12,7 @@ export function database() {
     throw new ApiError(
       503,
       "service_not_configured",
-      "Server setting DATABASE_URL is not configured.",
+      "Server setting DATABASE_URL is not configured. Add it to the Vercel Production environment and redeploy.",
     );
   }
   return neon(connectionString) as unknown as DatabaseTag;
