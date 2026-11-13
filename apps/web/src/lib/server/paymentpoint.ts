@@ -58,7 +58,7 @@ export async function createPaymentPointAccounts(input: {
         email: input.email,
         name: input.name,
         phoneNumber: input.phoneNumber,
-        bankCode: ["20946", "20897"],
+        bankCode: ["20897"],
         businessId: paymentPointBusinessId(),
       }),
     });
