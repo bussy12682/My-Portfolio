@@ -120,11 +120,21 @@ export async function createPaymentPointAccounts(input: {
   if (!bankAccounts.length) {
     const rawAccounts = Array.isArray(result?.bankAccounts) ? result.bankAccounts : [];
     const firstBankAccount = objectValue(rawAccounts[0]);
+    const business = objectValue(result?.business);
+    const rawErrors = result?.errors;
     console.error("PaymentPoint returned no usable virtual accounts", {
+      statusCode: response.status,
+      providerStatus: status,
+      providerMessage:
+        typeof result?.message === "string" ? safeProviderText(result.message) : undefined,
       responseKeys: result ? Object.keys(result).slice(0, 20) : [],
       bankAccountsType: Array.isArray(result?.bankAccounts) ? "array" : typeof result?.bankAccounts,
       bankAccountCount: rawAccounts.length,
       firstBankAccountKeys: firstBankAccount ? Object.keys(firstBankAccount).slice(0, 20) : [],
+      customerKeys: customer ? Object.keys(customer).slice(0, 20) : [],
+      businessKeys: business ? Object.keys(business).slice(0, 20) : [],
+      errorsType: Array.isArray(rawErrors) ? "array" : typeof rawErrors,
+      providerErrorCount: Array.isArray(rawErrors) ? rawErrors.length : undefined,
       providerErrors: providerErrors(result?.errors),
     });
     throw new ApiError(
