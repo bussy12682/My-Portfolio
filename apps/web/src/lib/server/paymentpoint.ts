@@ -18,6 +18,26 @@ function objectValue(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+function safeProviderText(value: string) {
+  return value
+    .slice(0, 200)
+    .replace(/\b[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}\b|\+?\d[\d\s().-]{8,}\d/g, "[redacted]");
+}
+
+function providerErrors(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 5).map((entry) => {
+    if (typeof entry === "string") return safeProviderText(entry);
+    const error = objectValue(entry);
+    if (!error) return typeof entry;
+    return Object.fromEntries(
+      ["bankCode", "code", "message", "error"]
+        .filter((field) => typeof error[field] === "string")
+        .map((field) => [field, safeProviderText(String(error[field]))]),
+    );
+  });
+}
+
 export async function createPaymentPointAccounts(input: {
   email: string;
   name: string;
@@ -105,6 +125,7 @@ export async function createPaymentPointAccounts(input: {
       bankAccountsType: Array.isArray(result?.bankAccounts) ? "array" : typeof result?.bankAccounts,
       bankAccountCount: rawAccounts.length,
       firstBankAccountKeys: firstBankAccount ? Object.keys(firstBankAccount).slice(0, 20) : [],
+      providerErrors: providerErrors(result?.errors),
     });
     throw new ApiError(
       502,
