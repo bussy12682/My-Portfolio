@@ -127,8 +127,10 @@ export async function getAirtimeNetworks(): Promise<AirtimeNetwork[]> {
   const networks = rowsFrom(body)
     .map((row) => {
       const id = positiveInteger(row.id);
-      const name = typeof row.name === "string" ? row.name.trim() : "";
-      const code = typeof row.code === "string" ? row.code.trim() : "";
+      const nameValue = row.network ?? row.name;
+      const codeValue = row.prefix ?? row.code;
+      const name = typeof nameValue === "string" ? nameValue.trim() : "";
+      const code = typeof codeValue === "string" ? codeValue.trim() : "";
       return id && name && code ? { id, name, code } : null;
     })
     .filter((network): network is AirtimeNetwork => network !== null);
