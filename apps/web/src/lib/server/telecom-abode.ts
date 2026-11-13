@@ -11,6 +11,8 @@ export type AirtimeNetwork = {
 
 export type DataPlan = {
   id: string;
+  dataPlanId: number;
+  networkId: number;
   network: string;
   description: string;
   priceKobo: number;
@@ -56,10 +58,15 @@ async function providerRequest(path: string, init?: RequestInit) {
   }
 }
 
-async function responseJson(response: Response): Promise<unknown> {
+async function responseJson(response: Response, endpoint: string): Promise<unknown> {
   try {
     return await response.json();
   } catch {
+    console.error("Telecom Abode returned a non-JSON response", {
+      endpoint,
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+    });
     throw new ApiError(
       502,
       "provider_invalid_response",
@@ -120,9 +127,10 @@ function requireCatalogSuccess(response: Response, body: unknown) {
   }
 }
 
-export async function getAirtimeNetworks(): Promise<AirtimeNetwork[]> {
-  const response = await providerRequest("/get-networks?service=airtime");
-  const body = await responseJson(response);
+async function getNetworks(service: "airtime" | "data"): Promise<AirtimeNetwork[]> {
+  const endpoint = `/get-networks?service=${service}`;
+  const response = await providerRequest(endpoint);
+  const body = await responseJson(response, endpoint);
   requireCatalogSuccess(response, body);
   const networks = rowsFrom(body)
     .map((row) => {
@@ -144,54 +152,42 @@ export async function getAirtimeNetworks(): Promise<AirtimeNetwork[]> {
   return networks;
 }
 
-export async function getDataPlans(): Promise<DataPlan[]> {
-  const paths = ["/data/data_plans", "/data_plans"];
-  let lastResponse: Response | undefined;
-  for (const path of paths) {
-    const response = await providerRequest(path);
-    lastResponse = response;
-    if (response.status === 404 && path !== paths[paths.length - 1]) continue;
-    const body = await responseJson(response);
-    requireCatalogSuccess(response, body);
-    const plans = rowsFrom(body)
-      .map((row) => {
-        const idValue = row.plan_id;
-        const id =
-          typeof idValue === "string" || typeof idValue === "number" ? String(idValue) : "";
-        const network = typeof row.network === "string" ? row.network.trim() : "";
-        const size = typeof row.datasize === "string" ? row.datasize.trim() : "";
-        const type = typeof row.type === "string" ? row.type.trim() : "";
-        const day = row.day === undefined ? "" : String(row.day).trim();
-        const priceKobo = priceInKobo(row.price);
-        if (!id || !network || !size || priceKobo === null) return null;
-        const description = [network, size, type, day ? `${day} days` : ""]
-          .filter(Boolean)
-          .join(" · ");
-        return { id, network, description, priceKobo };
-      })
-      .filter((plan): plan is DataPlan => plan !== null);
-    if (!plans.length) {
-      throw new ApiError(
-        502,
-        "provider_catalog_invalid",
-        "Telecom Abode returned no usable data plans.",
-      );
-    }
-    return plans;
-  }
+export async function getAirtimeNetworks(): Promise<AirtimeNetwork[]> {
+  return getNetworks("airtime");
+}
 
-  if (lastResponse) {
+export async function getDataPlans(): Promise<DataPlan[]> {
+  const endpoint = "/data_plans";
+  const [response, networks] = await Promise.all([providerRequest(endpoint), getNetworks("data")]);
+  const body = await responseJson(response, endpoint);
+  requireCatalogSuccess(response, body);
+  const networkIds = new Map(
+    networks.map((network) => [network.name.toLowerCase(), network.id] as const),
+  );
+  const plans = rowsFrom(body)
+    .map((row) => {
+      const dataPlanId = positiveInteger(row.plan_id);
+      const network = typeof row.network === "string" ? row.network.trim() : "";
+      const networkId = networkIds.get(network.toLowerCase());
+      const size = typeof row.datasize === "string" ? row.datasize.trim() : "";
+      const type = typeof row.type === "string" ? row.type.trim() : "";
+      const day = row.day === undefined ? "" : String(row.day).trim();
+      const priceKobo = priceInKobo(row.price);
+      if (!dataPlanId || !network || !networkId || !size || priceKobo === null) return null;
+      const description = [network, size, type, day ? `${day} days` : ""]
+        .filter(Boolean)
+        .join(" · ");
+      return { id: String(dataPlanId), dataPlanId, networkId, network, description, priceKobo };
+    })
+    .filter((plan): plan is DataPlan => plan !== null);
+  if (!plans.length) {
     throw new ApiError(
       502,
-      "provider_catalog_unavailable",
-      "Telecom Abode data plans are not available at the documented endpoints.",
+      "provider_catalog_invalid",
+      "Telecom Abode returned no usable data plans.",
     );
   }
-  throw new ApiError(
-    503,
-    "provider_catalog_unavailable",
-    "Data plans are temporarily unavailable.",
-  );
+  return plans;
 }
 
 function providerMessage(body: unknown) {
@@ -269,16 +265,22 @@ export function buyAirtime(input: {
   return submitPurchase("/airtime", {
     network: input.network,
     phone: input.phone,
-    amount: input.amountNgn,
-    type: "VTU",
+    amount: String(input.amountNgn),
+    plan_type: "VTU",
     "request-id": input.requestId,
   });
 }
 
-export function buyData(input: { phone: string; plan: string; requestId: string }) {
+export function buyData(input: {
+  network: number;
+  phone: string;
+  dataPlan: number;
+  requestId: string;
+}) {
   return submitPurchase("/data", {
+    network: input.network,
     phone: input.phone,
-    plan: input.plan,
+    data_plan: input.dataPlan,
     bypass: false,
     "request-id": input.requestId,
   });
@@ -291,6 +293,10 @@ export async function getTransactionStatus(requestId: string): Promise<ProviderR
   try {
     body = await response.json();
   } catch {
+    console.error("Telecom Abode returned a non-JSON transaction response", {
+      status: response.status,
+      contentType: response.headers.get("content-type"),
+    });
     return { status: "unknown", message: "" };
   }
   if (!response.ok) return { status: "unknown", message: providerMessage(body) };

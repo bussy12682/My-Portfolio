@@ -221,7 +221,8 @@ export async function POST(request: Request) {
       providerProductId = plan.id;
       productLabel = plan.description;
       totalKobo = plan.priceKobo;
-      purchase = (requestId) => buyData({ phone, plan: plan.id, requestId });
+      purchase = (requestId) =>
+        buyData({ network: plan.networkId, phone, dataPlan: plan.dataPlanId, requestId });
     }
 
     if (totalKobo === undefined) {
