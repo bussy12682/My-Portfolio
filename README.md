@@ -52,6 +52,8 @@ Create a Neon database and apply
 [`neon/migrations/202611110001_initial_backend.sql`](./neon/migrations/202611110001_initial_backend.sql)
 and then
 [`neon/migrations/202611110002_vtu_purchases.sql`](./neon/migrations/202611110002_vtu_purchases.sql)
+and
+[`neon/migrations/202611130001_paymentpoint_wallet_deposits.sql`](./neon/migrations/202611130001_paymentpoint_wallet_deposits.sql)
 to it using Neon SQL Editor or `psql`. Set the variables from
 [`.env.example`](./.env.example) in the Vercel project's Production environment.
 The example file contains placeholders only; enter actual values directly into
@@ -61,6 +63,7 @@ Vercel's encrypted Environment Variables settings and never commit credentials:
 - `DATABASE_URL`
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `EMAIL_PRICE_KOBO`
 - `PAYSTACK_SECRET_KEY`, `PAYSTACK_MIN_TOPUP_NGN`, and `PAYSTACK_MAX_TOPUP_NGN`
+- `PAYMENTPOINT_API_KEY`, `PAYMENTPOINT_SECRET_KEY`, and `PAYMENTPOINT_BUSINESS_ID`
 - `TELECOM_ABODE_API_KEY` for live airtime and data purchases
 
 `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME` are optional and have defaults. Verify
@@ -75,17 +78,22 @@ For local development, put the values in `apps/web/.env.local`. Resend sends
 account verification, password reset and developer email messages. Configure
 the Paystack webhook URL as
 `${NEXT_PUBLIC_SITE_URL}/api/billing/paystack/webhook`.
+For wallet bank-transfer deposits, configure PaymentPoint's webhook URL as
+`${NEXT_PUBLIC_SITE_URL}/api/billing/paymentpoint/webhook`.
 
 #### Production go-live checklist
 
 1. In Vercel, add the production values for `NEXT_PUBLIC_SITE_URL`
    (`https://rektina-sub-web.vercel.app`), `DATABASE_URL`, `RESEND_API_KEY`,
-   `RESEND_FROM_EMAIL`, `EMAIL_PRICE_KOBO`, `PAYSTACK_SECRET_KEY`, and
-   `TELECOM_ABODE_API_KEY`. Set the Paystack top-up limits too, and optionally
+   `RESEND_FROM_EMAIL`, `EMAIL_PRICE_KOBO`, `PAYSTACK_SECRET_KEY`,
+   `PAYMENTPOINT_API_KEY`, `PAYMENTPOINT_SECRET_KEY`,
+   `PAYMENTPOINT_BUSINESS_ID`, and `TELECOM_ABODE_API_KEY`. Set the Paystack
+   top-up limits too, and optionally
    `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME`. Redeploy after changing variables.
 2. In Neon SQL Editor, apply migration `202611110001_initial_backend.sql`,
-   followed by `202611110002_vtu_purchases.sql`. These migrations create a new
-   schema; they do not import existing Supabase accounts or data.
+   followed by `202611110002_vtu_purchases.sql` and
+   `202611130001_paymentpoint_wallet_deposits.sql`. These migrations create a
+   new schema; they do not import existing Supabase accounts or data.
 3. Verify the sender domain in Resend and use an address at that verified domain
    for `RESEND_FROM_EMAIL`. Send a verification email to an account you control.
 4. Configure Paystack's webhook URL to
@@ -93,14 +101,21 @@ the Paystack webhook URL as
    authenticates Paystack using `PAYSTACK_SECRET_KEY` for both transaction
    initialization and verification; the current redirect checkout does not
    require a browser-side Paystack public key.
-5. Create and verify an account, fund its wallet using Paystack, then test a
+5. Configure PaymentPoint's webhook URL to
+   `https://rektina-sub-web.vercel.app/api/billing/paymentpoint/webhook`. Rotate
+   any PaymentPoint credentials that have been shared in chat before adding the
+   replacement values to Vercel.
+6. Create and verify an account, create its bank-transfer account in the
+   dashboard, and make a small test transfer. Confirm the wallet is credited
+   once, then test a
    small airtime or data purchase. Provider purchases are real transactions;
    never use an unintended recipient or amount. If a purchase has an uncertain
    outcome, recheck its status rather than submitting another order.
 
 The dashboard supports account sign-in/up, project and API-key management,
-Paystack top-ups, wallet balance, airtime and data purchases through Telecom
-Abode, and recent email activity. Purchases use Telecom Abode's live catalog and
+PaymentPoint bank-transfer wallet deposits, wallet balance, airtime and data
+purchases through Telecom Abode, and recent email activity. Existing Paystack
+top-up verification remains available for earlier pending payments. Purchases use Telecom Abode's live catalog and
 are charged at the listed price. Email sends are made
 by calling `POST /api/v1/emails` with a project API key and an `Idempotency-Key`
 header. The API key secret is only shown at creation; store it securely on your

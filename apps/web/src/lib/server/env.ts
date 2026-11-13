@@ -20,7 +20,11 @@ export function siteUrl() {
 export function emailPriceKobo() {
   const value = Number(required("EMAIL_PRICE_KOBO"));
   if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new ApiError(503, "service_not_configured", "EMAIL_PRICE_KOBO must be a positive integer.");
+    throw new ApiError(
+      503,
+      "service_not_configured",
+      "EMAIL_PRICE_KOBO must be a positive integer.",
+    );
   }
   return value;
 }
@@ -28,7 +32,11 @@ export function emailPriceKobo() {
 export function emailDailyLimit() {
   const value = Number(process.env.EMAIL_DAILY_LIMIT ?? "20");
   if (!Number.isInteger(value) || value < 1 || value > 1000) {
-    throw new ApiError(503, "service_not_configured", "EMAIL_DAILY_LIMIT must be between 1 and 1000.");
+    throw new ApiError(
+      503,
+      "service_not_configured",
+      "EMAIL_DAILY_LIMIT must be between 1 and 1000.",
+    );
   }
   return value;
 }
@@ -44,7 +52,11 @@ export function paystackMaxTopupKobo() {
 function ngnLimitKobo(name: string) {
   const value = Number(required(name));
   if (!Number.isSafeInteger(value) || value < 1 || value > 100_000_000) {
-    throw new ApiError(503, "service_not_configured", `${name} must be a positive whole-naira amount.`);
+    throw new ApiError(
+      503,
+      "service_not_configured",
+      `${name} must be a positive whole-naira amount.`,
+    );
   }
   return value * 100;
 }
@@ -67,4 +79,16 @@ export function resendFromName() {
 
 export function paystackSecretKey() {
   return required("PAYSTACK_SECRET_KEY");
+}
+
+export function paymentPointApiKey() {
+  return required("PAYMENTPOINT_API_KEY");
+}
+
+export function paymentPointSecretKey() {
+  return required("PAYMENTPOINT_SECRET_KEY");
+}
+
+export function paymentPointBusinessId() {
+  return required("PAYMENTPOINT_BUSINESS_ID");
 }

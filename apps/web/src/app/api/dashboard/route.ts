@@ -46,8 +46,17 @@ export async function GET() {
         from api_keys where owner_id = ${user.id} order by created_at desc`,
       sql<EmailMessage[]>`select id, recipient, subject, status, amount_kobo, created_at
         from email_messages where owner_id = ${user.id} order by created_at desc limit 10`,
-      sql<Topup[]>`select reference, amount_kobo, status, created_at
-        from topups where owner_id = ${user.id} order by created_at desc limit 10`,
+      sql<Topup[]>`
+        select reference, amount_kobo, status, created_at from (
+          select reference, amount_kobo, status, created_at
+          from topups where owner_id = ${user.id}
+          union all
+          select 'paymentpoint_' || provider_transaction_id as reference,
+                 amount_kobo, 'credited'::text as status, created_at
+          from paymentpoint_deposits where owner_id = ${user.id}
+        ) recent_topups
+        order by created_at desc limit 10
+      `,
     ]);
 
     const wallet = wallets[0];

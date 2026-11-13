@@ -33,6 +33,11 @@ type Topup = {
   status: string;
   created_at: string;
 };
+type TransferAccount = {
+  account_number: string;
+  account_name: string;
+  bank_name: string;
+};
 type DashboardData = {
   user: { email: string; emailVerified: boolean };
   wallet: { balance_kobo: string | number; currency: string };
@@ -91,7 +96,10 @@ export default function DashboardPage() {
   const [selectedProject, setSelectedProject] = useState("");
   const [projectName, setProjectName] = useState("");
   const [keyName, setKeyName] = useState("");
-  const [topupAmount, setTopupAmount] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [transferAccounts, setTransferAccounts] = useState<TransferAccount[]>([]);
+  const [accountStatus, setAccountStatus] = useState("missing");
+  const [accountError, setAccountError] = useState("");
   const [createdSecret, setCreatedSecret] = useState("");
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
@@ -120,6 +128,27 @@ export default function DashboardPage() {
     const timer = window.setTimeout(() => void loadDashboard(), 0);
     return () => window.clearTimeout(timer);
   }, [loadDashboard]);
+
+  const loadTransferAccount = useCallback(async () => {
+    try {
+      const result = await requestJson<{
+        status: string;
+        accounts: TransferAccount[];
+      }>("/api/billing/paymentpoint/account");
+      setTransferAccounts(result.accounts);
+      setAccountStatus(result.status);
+      setAccountError("");
+    } catch (caught) {
+      setAccountError(
+        caught instanceof Error ? caught.message : "The transfer account could not be loaded.",
+      );
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadTransferAccount(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadTransferAccount]);
 
   useEffect(() => {
     const reference = new URLSearchParams(window.location.search).get("reference");
@@ -216,21 +245,29 @@ export default function DashboardPage() {
     }
   }
 
-  async function startTopup(event: FormEvent<HTMLFormElement>) {
+  async function createTransferAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setBusy("topup");
-    setError("");
+    setBusy("paymentpoint-account");
+    setAccountError("");
     setNotice("");
     try {
-      const result = await requestJson<{ authorizationUrl: string }>("/api/billing/topups", {
+      const result = await requestJson<{
+        status: string;
+        accounts: TransferAccount[];
+      }>("/api/billing/paymentpoint/account", {
         method: "POST",
-        body: JSON.stringify({ amountNgn: Number(topupAmount) }),
+        body: JSON.stringify({ phoneNumber }),
       });
-      window.location.assign(result.authorizationUrl);
+      setTransferAccounts(result.accounts);
+      setAccountStatus(result.status);
+      setNotice("Your bank transfer account is ready. Deposits will be credited automatically.");
     } catch (caught) {
-      setError(
-        caught instanceof Error ? caught.message : "The wallet top-up could not be started.",
+      setAccountError(
+        caught instanceof Error
+          ? caught.message
+          : "The bank transfer account could not be created.",
       );
+    } finally {
       setBusy("");
     }
   }
@@ -290,8 +327,8 @@ export default function DashboardPage() {
 
       {!data?.user.emailVerified && (
         <div className="mt-8 border border-orbital/30 bg-orbital/10 p-4 text-sm">
-          Verify your email before creating projects, API keys, or wallet top-ups. Check your inbox
-          for the confirmation link.
+          Verify your email before creating projects, API keys, or a wallet transfer account. Check
+          your inbox for the confirmation link.
         </div>
       )}
       {error && (
@@ -483,32 +520,91 @@ export default function DashboardPage() {
       </section>
 
       <section className="mt-8 rounded-lg border bg-card p-5 sm:p-6">
-        <h2 className="text-xl font-semibold">Add wallet credits</h2>
+        <h2 className="text-xl font-semibold">Add wallet credits by bank transfer</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose a whole-naira amount. Payment opens securely with Paystack.
+          Get a dedicated Nigerian bank account and transfer any amount. Successful deposits are
+          credited to your wallet automatically.
         </p>
-        <form
-          onSubmit={startTopup}
-          className="mt-5 flex flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-end"
-        >
-          <div className="flex flex-1 flex-col gap-2">
-            <Label htmlFor="topup-amount">Amount (NGN)</Label>
-            <Input
-              id="topup-amount"
-              type="number"
-              min="1"
-              step="1"
-              required
-              value={topupAmount}
-              onChange={(event) => setTopupAmount(event.target.value)}
-              placeholder="500"
-              className="h-11"
-            />
+        {!transferAccounts.length && (
+          <form
+            onSubmit={createTransferAccount}
+            className="mt-5 flex flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-end"
+          >
+            <div className="flex flex-1 flex-col gap-2">
+              <Label htmlFor="paymentpoint-phone">Mobile number</Label>
+              <Input
+                id="paymentpoint-phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                minLength={10}
+                maxLength={16}
+                required
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                placeholder="08012345678"
+                className="h-11"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={
+                busy === "paymentpoint-account" ||
+                accountStatus === "creating" ||
+                !data?.user.emailVerified
+              }
+            >
+              {busy === "paymentpoint-account" ? "Creating account…" : "Get transfer account"}
+            </Button>
+          </form>
+        )}
+        {accountError && (
+          <p role="alert" className="mt-4 text-sm text-destructive">
+            {accountError}
+          </p>
+        )}
+        {accountStatus === "creating" && !transferAccounts.length && (
+          <p role="status" className="mt-4 text-sm text-muted-foreground">
+            Your transfer account is being created. Refresh this page in a moment.
+          </p>
+        )}
+        {transferAccounts.length > 0 && (
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            {transferAccounts.map((account) => (
+              <article
+                key={`${account.bank_name}-${account.account_number}`}
+                className="rounded-md border bg-background p-4"
+              >
+                <p className="font-medium">{account.bank_name}</p>
+                <p className="mt-3 font-mono text-xl font-semibold">{account.account_number}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{account.account_name}</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(account.account_number)
+                      .then(() => {
+                        setAccountError("");
+                        setNotice("Account number copied.");
+                      })
+                      .catch(() => setAccountError("Clipboard access was blocked."));
+                  }}
+                >
+                  Copy account number
+                </Button>
+              </article>
+            ))}
           </div>
-          <Button type="submit" disabled={busy === "topup" || !data?.user.emailVerified}>
-            {busy === "topup" ? "Starting payment…" : "Continue to payment"}
-          </Button>
-        </form>
+        )}
+        {transferAccounts.length > 0 && (
+          <p className="mt-4 text-xs text-muted-foreground">
+            Transfer directly to either account shown above. Your wallet balance updates after
+            PaymentPoint confirms the deposit.
+          </p>
+        )}
       </section>
 
       <section className="mt-8 rounded-lg border bg-card p-5 sm:p-6">
