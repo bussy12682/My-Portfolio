@@ -44,7 +44,7 @@ async function providerRequest(path: string, init?: RequestInit) {
       cache: "no-store",
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
       headers: {
-        authorization: `Token ${key}`,
+        authorization: `Bearer ${key}`,
         ...(init?.body ? { "content-type": "application/json" } : {}),
         ...init?.headers,
       },
