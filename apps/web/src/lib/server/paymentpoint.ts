@@ -55,6 +55,10 @@ export async function createPaymentPointAccounts(input: {
   try {
     body = await response.json();
   } catch {
+    console.error("PaymentPoint returned a non-JSON virtual account response", {
+      statusCode: response.status,
+      contentType: response.headers.get("content-type"),
+    });
     throw new ApiError(
       502,
       "payment_provider_invalid_response",
@@ -65,7 +69,11 @@ export async function createPaymentPointAccounts(input: {
   const result = objectValue(body);
   const status = String(result?.status ?? "").toLowerCase();
   if (!response.ok || status !== "success") {
-    console.error("PaymentPoint virtual account request failed", { status: response.status });
+    console.error("PaymentPoint virtual account request failed", {
+      statusCode: response.status,
+      providerStatus: status || undefined,
+      responseKeys: result ? Object.keys(result).slice(0, 20) : [],
+    });
     throw new ApiError(
       502,
       "payment_provider_rejected",
@@ -90,6 +98,14 @@ export async function createPaymentPointAccounts(input: {
     : [];
 
   if (!bankAccounts.length) {
+    const rawAccounts = Array.isArray(result?.bankAccounts) ? result.bankAccounts : [];
+    const firstBankAccount = objectValue(rawAccounts[0]);
+    console.error("PaymentPoint returned no usable virtual accounts", {
+      responseKeys: result ? Object.keys(result).slice(0, 20) : [],
+      bankAccountsType: Array.isArray(result?.bankAccounts) ? "array" : typeof result?.bankAccounts,
+      bankAccountCount: rawAccounts.length,
+      firstBankAccountKeys: firstBankAccount ? Object.keys(firstBankAccount).slice(0, 20) : [],
+    });
     throw new ApiError(
       502,
       "payment_provider_invalid_response",

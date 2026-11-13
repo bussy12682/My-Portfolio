@@ -109,16 +109,25 @@ function priceInKobo(value: unknown) {
 }
 
 function requireCatalogSuccess(response: Response, body: unknown) {
+  const object = objectValue(body);
+  const status = String(object?.status ?? "").toLowerCase();
   if (!response.ok) {
+    console.error("Telecom Abode catalog request failed", {
+      statusCode: response.status,
+      contentType: response.headers.get("content-type"),
+      providerStatus: status || undefined,
+    });
     throw new ApiError(
       response.status >= 500 ? 503 : 502,
       "provider_catalog_unavailable",
       "Telecom Abode could not load its product catalog.",
     );
   }
-  const object = objectValue(body);
-  const status = String(object?.status ?? "").toLowerCase();
   if (status === "fail" || status === "failed" || status === "error") {
+    console.error("Telecom Abode rejected a catalog request", {
+      statusCode: response.status,
+      providerStatus: status,
+    });
     throw new ApiError(
       502,
       "provider_catalog_unavailable",
@@ -238,7 +247,7 @@ async function submitPurchase(
       cache: "no-store",
       signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
       headers: {
-        authorization: `Token ${apiKey()}`,
+        authorization: `Bearer ${apiKey()}`,
         "content-type": "application/json",
       },
       body: JSON.stringify(payload),
