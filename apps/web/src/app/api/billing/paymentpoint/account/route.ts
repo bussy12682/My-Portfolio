@@ -8,6 +8,7 @@ type StoredAccount = {
   account_number: string;
   account_name: string;
   bank_name: string;
+  amount_kobo: number | string | null;
 };
 type Setup = { status: "creating" | "ready" | "failed" };
 
@@ -31,22 +32,18 @@ function normalizePhone(value: string) {
 async function accountsForOwner(ownerId: string): Promise<StoredAccount[]> {
   const sql = database();
   return sql<StoredAccount[]>`
-    select account_number, account_name, bank_name
-    from paymentpoint_accounts where owner_id = ${ownerId}
-    order by bank_name asc
+    select account.account_number, account.account_name, account.bank_name, account.amount_kobo
+    from paymentpoint_accounts account
+    where account.owner_id = ${ownerId}
+      and (
+        account.amount_kobo is null
+        or not exists (
+          select 1 from paymentpoint_deposits deposit
+          where deposit.account_number = account.account_number
+        )
+      )
+    order by created_at desc
   `;
-}
-
-async function readyAccounts(ownerId: string) {
-  const accounts = await accountsForOwner(ownerId);
-  if (!accounts.length) {
-    throw new ApiError(
-      503,
-      "account_setup_incomplete",
-      "Your transfer account is not available yet. Please contact support.",
-    );
-  }
-  return accounts;
 }
 
 export async function GET() {
@@ -59,13 +56,6 @@ export async function GET() {
       `,
       accountsForOwner(user.id),
     ]);
-    if (setups[0]?.status === "ready" && !accounts.length) {
-      throw new ApiError(
-        503,
-        "account_setup_incomplete",
-        "Your transfer account is not available yet. Please contact support.",
-      );
-    }
     return Response.json(
       { status: setups[0]?.status ?? "missing", accounts },
       { headers: { "Cache-Control": "no-store" } },
@@ -82,40 +72,32 @@ export async function POST(request: Request) {
     requireVerifiedEmail(user);
     const body = await readJson(request);
     const phoneNumber = normalizePhone(stringField(body, "phoneNumber", { max: 32 })!);
-    const sql = database();
-    const setups = await sql<Setup[]>`
-      select status from paymentpoint_account_setups where owner_id = ${user.id} limit 1
-    `;
-
-    if (setups[0]?.status === "ready") {
-      return Response.json(
-        { status: "ready", accounts: await readyAccounts(user.id) },
-        { headers: { "Cache-Control": "no-store" } },
+    const amountNgn = body.amountNgn;
+    if (
+      typeof amountNgn !== "number" ||
+      !Number.isSafeInteger(amountNgn) ||
+      amountNgn < 100 ||
+      amountNgn > 100_000_000
+    ) {
+      throw new ApiError(
+        400,
+        "invalid_amount",
+        "Enter a whole-naira top-up amount between ₦100 and ₦100,000,000.",
       );
     }
+    const amountKobo = amountNgn * 100;
+    const sql = database();
 
     const claimed = await sql<{ owner_id: string }[]>`
       insert into paymentpoint_account_setups (owner_id, phone_number, status)
       values (${user.id}, ${phoneNumber}, 'creating')
       on conflict (owner_id) do update
         set phone_number = excluded.phone_number, status = 'creating', updated_at = now()
-        where paymentpoint_account_setups.status = 'failed'
-          or (
-            paymentpoint_account_setups.status = 'creating'
-            and paymentpoint_account_setups.updated_at < now() - interval '2 minutes'
-          )
+        where paymentpoint_account_setups.status <> 'creating'
+          or paymentpoint_account_setups.updated_at < now() - interval '2 minutes'
       returning owner_id
     `;
     if (!claimed[0]) {
-      const current = await sql<Setup[]>`
-        select status from paymentpoint_account_setups where owner_id = ${user.id} limit 1
-      `;
-      if (current[0]?.status === "ready") {
-        return Response.json(
-          { status: "ready", accounts: await readyAccounts(user.id) },
-          { headers: { "Cache-Control": "no-store" } },
-        );
-      }
       throw new ApiError(
         409,
         "account_setup_in_progress",
@@ -124,10 +106,35 @@ export async function POST(request: Request) {
     }
 
     try {
+      const reusableAccounts = await sql<StoredAccount[]>`
+        select account.account_number, account.account_name, account.bank_name, account.amount_kobo
+        from paymentpoint_accounts account
+        where account.owner_id = ${user.id}
+          and account.amount_kobo = ${amountKobo}
+          and not exists (
+            select 1 from paymentpoint_deposits deposit
+            where deposit.account_number = account.account_number
+          )
+        order by created_at desc
+        limit 1
+      `;
+      if (reusableAccounts.length) {
+        await sql`
+          update paymentpoint_account_setups
+          set status = 'ready', updated_at = now()
+          where owner_id = ${user.id} and status = 'creating'
+        `;
+        return Response.json(
+          { status: "ready", accounts: await accountsForOwner(user.id) },
+          { headers: { "Cache-Control": "no-store" } },
+        );
+      }
+
       const result = await createPaymentPointAccounts({
         email: user.email,
         name: user.user_metadata.full_name,
         phoneNumber,
+        amountNgn,
       });
 
       const accountRows = result.accounts.map((account) => ({
@@ -135,6 +142,7 @@ export async function POST(request: Request) {
         account_name: account.accountName,
         bank_name: account.bankName,
         reserved_account_id: account.reservedAccountId,
+        amount_kobo: amountKobo,
       }));
       const saved = await sql<{ owner_id: string }[]>`
         with provider_accounts as materialized (
@@ -142,14 +150,15 @@ export async function POST(request: Request) {
             account_number text,
             account_name text,
             bank_name text,
-            reserved_account_id text
+            reserved_account_id text,
+            amount_kobo bigint
           )
         ),
         inserted_accounts as (
           insert into paymentpoint_accounts (
-            account_number, owner_id, account_name, bank_name, reserved_account_id
+            account_number, owner_id, account_name, bank_name, reserved_account_id, amount_kobo
           )
-          select account_number, ${user.id}, account_name, bank_name, reserved_account_id
+          select account_number, ${user.id}, account_name, bank_name, reserved_account_id, amount_kobo
           from provider_accounts
           returning account_number
         )
@@ -176,7 +185,7 @@ export async function POST(request: Request) {
     }
 
     return Response.json(
-      { status: "ready", accounts: await readyAccounts(user.id) },
+      { status: "ready", accounts: await accountsForOwner(user.id) },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

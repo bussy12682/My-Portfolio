@@ -37,6 +37,7 @@ type TransferAccount = {
   account_number: string;
   account_name: string;
   bank_name: string;
+  amount_kobo: number | string | null;
 };
 type DashboardData = {
   user: { email: string; emailVerified: boolean };
@@ -97,6 +98,7 @@ export default function DashboardPage() {
   const [projectName, setProjectName] = useState("");
   const [keyName, setKeyName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
   const [transferAccounts, setTransferAccounts] = useState<TransferAccount[]>([]);
   const [accountStatus, setAccountStatus] = useState("missing");
   const [accountError, setAccountError] = useState("");
@@ -256,11 +258,13 @@ export default function DashboardPage() {
         accounts: TransferAccount[];
       }>("/api/billing/paymentpoint/account", {
         method: "POST",
-        body: JSON.stringify({ phoneNumber }),
+        body: JSON.stringify({ phoneNumber, amountNgn: Number(transferAmount) }),
       });
       setTransferAccounts(result.accounts);
       setAccountStatus(result.status);
-      setNotice("Your bank transfer account is ready. Deposits will be credited automatically.");
+      setNotice(
+        "Your OPay account is ready. Transfer the exact amount shown to credit your wallet.",
+      );
     } catch (caught) {
       setAccountError(
         caught instanceof Error
@@ -522,42 +526,56 @@ export default function DashboardPage() {
       <section className="mt-8 rounded-lg border bg-card p-5 sm:p-6">
         <h2 className="text-xl font-semibold">Add wallet credits by bank transfer</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Get a dedicated Nigerian bank account and transfer any amount. Successful deposits are
-          credited to your wallet automatically.
+          OPay provides a dynamic account for a specific amount. Enter at least ₦100, then transfer
+          that exact amount. Successful deposits are credited to your wallet automatically.
         </p>
-        {!transferAccounts.length && (
-          <form
-            onSubmit={createTransferAccount}
-            className="mt-5 flex flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-end"
+        <form
+          onSubmit={createTransferAccount}
+          className="mt-5 flex flex-col gap-3 sm:max-w-xl sm:flex-row sm:items-end"
+        >
+          <div className="flex flex-1 flex-col gap-2">
+            <Label htmlFor="paymentpoint-phone">Mobile number</Label>
+            <Input
+              id="paymentpoint-phone"
+              type="tel"
+              autoComplete="tel"
+              inputMode="tel"
+              minLength={10}
+              maxLength={16}
+              required
+              value={phoneNumber}
+              onChange={(event) => setPhoneNumber(event.target.value)}
+              placeholder="08012345678"
+              className="h-11"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-2">
+            <Label htmlFor="paymentpoint-amount">Top-up amount (NGN)</Label>
+            <Input
+              id="paymentpoint-amount"
+              type="number"
+              inputMode="numeric"
+              min={100}
+              max={100_000_000}
+              step={1}
+              required
+              value={transferAmount}
+              onChange={(event) => setTransferAmount(event.target.value)}
+              placeholder="500"
+              className="h-11"
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={
+              busy === "paymentpoint-account" ||
+              accountStatus === "creating" ||
+              !data?.user.emailVerified
+            }
           >
-            <div className="flex flex-1 flex-col gap-2">
-              <Label htmlFor="paymentpoint-phone">Mobile number</Label>
-              <Input
-                id="paymentpoint-phone"
-                type="tel"
-                autoComplete="tel"
-                inputMode="tel"
-                minLength={10}
-                maxLength={16}
-                required
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-                placeholder="08012345678"
-                className="h-11"
-              />
-            </div>
-            <Button
-              type="submit"
-              disabled={
-                busy === "paymentpoint-account" ||
-                accountStatus === "creating" ||
-                !data?.user.emailVerified
-              }
-            >
-              {busy === "paymentpoint-account" ? "Creating account…" : "Get transfer account"}
-            </Button>
-          </form>
-        )}
+            {busy === "paymentpoint-account" ? "Creating account…" : "Get OPay account"}
+          </Button>
+        </form>
         {accountError && (
           <p role="alert" className="mt-4 text-sm text-destructive">
             {accountError}
@@ -578,6 +596,11 @@ export default function DashboardPage() {
                 <p className="font-medium">{account.bank_name}</p>
                 <p className="mt-3 font-mono text-xl font-semibold">{account.account_number}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{account.account_name}</p>
+                {account.amount_kobo !== null && (
+                  <p className="mt-2 text-sm font-medium">
+                    Transfer exactly {formatNaira(account.amount_kobo)}
+                  </p>
+                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -601,8 +624,8 @@ export default function DashboardPage() {
         )}
         {transferAccounts.length > 0 && (
           <p className="mt-4 text-xs text-muted-foreground">
-            Transfer directly to either account shown above. Your wallet balance updates after
-            PaymentPoint confirms the deposit.
+            Use the account matching your intended amount and send the exact amount shown. Your
+            wallet balance updates after PaymentPoint confirms the deposit.
           </p>
         )}
       </section>

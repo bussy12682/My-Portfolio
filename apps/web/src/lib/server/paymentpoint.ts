@@ -42,6 +42,7 @@ export async function createPaymentPointAccounts(input: {
   email: string;
   name: string;
   phoneNumber: string;
+  amountNgn: number;
 }) {
   let response: Response;
   try {
@@ -60,6 +61,8 @@ export async function createPaymentPointAccounts(input: {
         phoneNumber: input.phoneNumber,
         bankCode: ["20897"],
         businessId: paymentPointBusinessId(),
+        accountType: "dynamic",
+        amount: input.amountNgn,
       }),
     });
   } catch (error) {
@@ -109,9 +112,20 @@ export async function createPaymentPointAccounts(input: {
           const accountNumber = String(account?.accountNumber ?? "").replace(/\D/g, "");
           const accountName = typeof account?.accountName === "string" ? account.accountName : "";
           const bankName = typeof account?.bankName === "string" ? account.bankName : "";
+          const accountType =
+            typeof account?.accountType === "string" ? account.accountType.toLowerCase() : "";
+          const amountNgn = Number(account?.amount);
           const reservedAccountId =
             typeof account?.Reserved_Account_Id === "string" ? account.Reserved_Account_Id : null;
-          if (!/^\d{10}$/.test(accountNumber) || !accountName || !bankName) return null;
+          if (
+            !/^\d{10}$/.test(accountNumber) ||
+            !accountName ||
+            !bankName ||
+            accountType !== "dynamic" ||
+            amountNgn !== input.amountNgn
+          ) {
+            return null;
+          }
           return { accountNumber, accountName, bankName, reservedAccountId };
         })
         .filter((account): account is PaymentPointAccount => account !== null)
@@ -131,6 +145,14 @@ export async function createPaymentPointAccounts(input: {
       bankAccountsType: Array.isArray(result?.bankAccounts) ? "array" : typeof result?.bankAccounts,
       bankAccountCount: rawAccounts.length,
       firstBankAccountKeys: firstBankAccount ? Object.keys(firstBankAccount).slice(0, 20) : [],
+      firstBankAccountType:
+        typeof firstBankAccount?.accountType === "string"
+          ? safeProviderText(firstBankAccount.accountType)
+          : undefined,
+      firstBankAccountAmount:
+        typeof firstBankAccount?.amount === "number" || typeof firstBankAccount?.amount === "string"
+          ? firstBankAccount.amount
+          : undefined,
       customerKeys: customer ? Object.keys(customer).slice(0, 20) : [],
       businessKeys: business ? Object.keys(business).slice(0, 20) : [],
       errorsType: Array.isArray(rawErrors) ? "array" : typeof rawErrors,
