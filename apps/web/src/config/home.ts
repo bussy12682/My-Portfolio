@@ -28,8 +28,8 @@ import {
 } from "lucide-react";
 
 // Copy is grounded in what the product actually does (vtu_developer_infrastructure_vscode/docs/01-prd.md).
-// No "cheapest" claims, no inbox-placement promises, no SMS API until it ships, no invented
-// customers or numbers. Values inside product screens (IDs, prices, times) are illustrative.
+// No "cheapest" claims, no inbox-placement promises, no invented customers or numbers. Values
+// inside product screens (IDs, prices, times) are illustrative.
 
 const getStarted: ActionLink = { label: "Get Started", href: "/sign-up" };
 const forDevelopers: ActionLink = { label: "For developers", href: "/developers" };
@@ -113,15 +113,15 @@ export const screens = { receipt, plans, airtime, email, events, usage };
 export const homeContent = {
   announcement: {
     badge: "New",
-    message: "Permitt, our email API for developers, is coming soon",
+    message: "Permitt APIs for transactional email and opt-in bulk SMS",
     link: { label: "Learn more", href: "/developers" } satisfies LinkItem,
   },
 
   hero: {
-    eyebrow: "Airtime, data and email API",
+    eyebrow: "Airtime, data, email and bulk SMS APIs",
     title: "Top up and send without the guesswork.",
     description:
-      "Buy airtime and data at the price you see, with a receipt for every order. Building a product? Permitt puts transactional email behind one API.",
+      "Buy airtime and data at the price you see, with a receipt for every order. Build with transactional email and opt-in bulk SMS APIs.",
     actions: [getStarted, { ...forDevelopers, variant: "contrast" }] satisfies ActionLink[],
     stats: [
       { value: "One", label: "charge per order" },
@@ -152,7 +152,7 @@ export const homeContent = {
     eyebrow: "What you can do",
     title: "Top up any line.\nSend from your own product.",
     description:
-      "Everyday airtime and data for you, and a transactional email API for the product you're building. One account for both.",
+      "Everyday airtime and data for you, with transactional email and consent-based bulk SMS APIs for the product you're building.",
     items: [
       {
         id: "airtime",
@@ -320,7 +320,7 @@ export const homeContent = {
       {
         question: "Is there an SMS API?",
         answer:
-          "Not yet. SMS comes after the email API, once it's stable and its abuse controls are proven.",
+          "Yes. Developers can send to up to 50 unique Nigerian numbers per request through the bulk SMS API. Recipients must have opted in, and delivery reports are available by message ID.",
       },
     ] satisfies FaqItem[],
   },

@@ -29,6 +29,30 @@ export function emailPriceKobo() {
   return value;
 }
 
+export function smsPricePerPageKobo() {
+  const value = Number(required("SMS_PRICE_PER_PAGE_KOBO"));
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new ApiError(
+      503,
+      "service_not_configured",
+      "SMS_PRICE_PER_PAGE_KOBO must be a positive integer.",
+    );
+  }
+  return value;
+}
+
+export function telecomAbodeSmsSenderId() {
+  const value = required("TELECOM_ABODE_SMS_SENDER_ID");
+  if (!/^(?=.*[A-Za-z0-9])[A-Za-z0-9 ]{1,11}$/.test(value)) {
+    throw new ApiError(
+      503,
+      "service_not_configured",
+      "TELECOM_ABODE_SMS_SENDER_ID must be at most 11 letters, numbers, or spaces.",
+    );
+  }
+  return value;
+}
+
 export function emailDailyLimit() {
   const value = Number(process.env.EMAIL_DAILY_LIMIT ?? "20");
   if (!Number.isInteger(value) || value < 1 || value > 1000) {
@@ -91,4 +115,8 @@ export function paymentPointSecretKey() {
 
 export function paymentPointBusinessId() {
   return required("PAYMENTPOINT_BUSINESS_ID");
+}
+
+export function telecomAbodeApiKey() {
+  return required("TELECOM_ABODE_API_KEY");
 }

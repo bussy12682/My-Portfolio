@@ -9,7 +9,7 @@ import type { DomainData } from "@/components/site/previews";
 import { routes } from "@/config/links";
 
 // Permitt pages. Facts come from the PRD and API docs (01-prd.md, 06-api-docs.md); screen values
-// are illustrative. Permitt is for transactional email: no campaigns, no inbox promises, no SMS yet.
+// are illustrative. Email is transactional; bulk SMS requires recipient consent.
 
 const createWorkspace: ActionLink = { label: "Create a workspace", href: "/sign-up" };
 const docs: ActionLink = { ...routes.docs, variant: "contrast" };
@@ -32,7 +32,7 @@ const devFaq = {
   transactional: {
     question: "Can I send marketing campaigns?",
     answer:
-      "No. Permitt is built for transactional email: receipts, alerts, password resets and one-time codes. Bulk marketing campaigns aren't supported.",
+      "No email marketing campaigns. The email API is for receipts, alerts, password resets and one-time codes. Bulk SMS is a separate API and may only be sent to recipients who have opted in.",
   },
   inbox: {
     question: "Do you guarantee my emails reach the inbox?",
@@ -52,7 +52,7 @@ const devFaq = {
   sms: {
     question: "Is there an SMS API?",
     answer:
-      "Not yet. SMS comes after the email API, once it's stable and its abuse controls are proven.",
+      "Yes. The bulk SMS API accepts up to 50 unique Nigerian numbers per request, requires an explicit recipient-consent attestation, and supports delivery reports by message ID. A successful response means Telecom Abode accepted the request, not that every message was delivered.",
   },
 } satisfies Record<string, FaqItem>;
 
@@ -60,7 +60,7 @@ export const developersPage = {
   meta: {
     title: "Developers",
     description:
-      "Permitt by REKTINA: an email API with workspaces, verified domains, scoped keys and signed webhooks.",
+      "Permitt by REKTINA: transactional email and opt-in bulk SMS APIs with scoped keys and usage controls.",
   },
   hero: {
     eyebrow: "Permitt by REKTINA",

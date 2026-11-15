@@ -54,6 +54,10 @@ and then
 [`neon/migrations/202611110002_vtu_purchases.sql`](./neon/migrations/202611110002_vtu_purchases.sql)
 and
 [`neon/migrations/202611130001_paymentpoint_wallet_deposits.sql`](./neon/migrations/202611130001_paymentpoint_wallet_deposits.sql)
+and
+[`neon/migrations/202611140001_paymentpoint_dynamic_accounts.sql`](./neon/migrations/202611140001_paymentpoint_dynamic_accounts.sql)
+and
+[`neon/migrations/202611140002_bulk_sms.sql`](./neon/migrations/202611140002_bulk_sms.sql)
 to it using Neon SQL Editor or `psql`. Set the variables from
 [`.env.example`](./.env.example) in the Vercel project's Production environment.
 The example file contains placeholders only; enter actual values directly into
@@ -62,11 +66,14 @@ Vercel's encrypted Environment Variables settings and never commit credentials:
 - `NEXT_PUBLIC_SITE_URL`
 - `DATABASE_URL`
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `EMAIL_PRICE_KOBO`
+- `SMS_PRICE_PER_PAGE_KOBO` and `TELECOM_ABODE_SMS_SENDER_ID` for developer SMS sends
 - `PAYSTACK_SECRET_KEY`, `PAYSTACK_MIN_TOPUP_NGN`, and `PAYSTACK_MAX_TOPUP_NGN`
 - `PAYMENTPOINT_API_KEY`, `PAYMENTPOINT_SECRET_KEY`, and `PAYMENTPOINT_BUSINESS_ID`
 - `TELECOM_ABODE_API_KEY` for live airtime and data purchases
 
-`EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME` are optional and have defaults. Verify
+`EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME` are optional and have defaults. Set the SMS
+page price in kobo before enabling SMS, and configure a Telecom Abode sender ID that
+has been approved for the account. SMS uses `TELECOM_ABODE_API_KEY`. Verify
 the sender domain in Resend before sending; `RESEND_FROM_EMAIL` must use that
 verified domain, not a personal Gmail address. Keep all credentials server-side;
 do not use a `NEXT_PUBLIC_` prefix for secrets.
@@ -89,10 +96,14 @@ For wallet bank-transfer deposits, configure PaymentPoint's webhook URL as
    `PAYMENTPOINT_API_KEY`, `PAYMENTPOINT_SECRET_KEY`,
    `PAYMENTPOINT_BUSINESS_ID`, and `TELECOM_ABODE_API_KEY`. Set the Paystack
    top-up limits too, and optionally
-   `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME`. Redeploy after changing variables.
+   `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME`. Before enabling SMS, configure
+   `SMS_PRICE_PER_PAGE_KOBO` and the approved `TELECOM_ABODE_SMS_SENDER_ID`.
+   Redeploy after changing variables.
 2. In Neon SQL Editor, apply migration `202611110001_initial_backend.sql`,
-   followed by `202611110002_vtu_purchases.sql` and
-   `202611130001_paymentpoint_wallet_deposits.sql`. These migrations create a
+   followed by `202611110002_vtu_purchases.sql`,
+   `202611130001_paymentpoint_wallet_deposits.sql`,
+   `202611140001_paymentpoint_dynamic_accounts.sql`, and
+   `202611140002_bulk_sms.sql`. These migrations create a
    new schema; they do not import existing Supabase accounts or data.
 3. Verify the sender domain in Resend and use an address at that verified domain
    for `RESEND_FROM_EMAIL`. Send a verification email to an account you control.
@@ -120,6 +131,19 @@ are charged at the listed price. Email sends are made
 by calling `POST /api/v1/emails` with a project API key and an `Idempotency-Key`
 header. The API key secret is only shown at creation; store it securely on your
 application server, never in browser code.
+
+The bulk SMS API uses `POST /api/v1/sms` and `GET /api/v1/sms?id=<message-id>`
+with a project API key. Each request is limited to 50 unique Nigerian numbers,
+requires an explicit recipient-consent attestation, limits messages to 480
+characters, and uses an idempotency key.
+SMS is priced per 160-character GSM-7 page using `SMS_PRICE_PER_PAGE_KOBO`;
+provider-accepted messages are charged, confirmed rejections are refunded, and
+uncertain provider outcomes remain reserved. A successful response means
+Telecom Abode accepted the request, not that every recipient received it.
+Delivery reports are retrieved from Telecom Abode with the GET endpoint. Message
+text and recipient numbers are not retained in the SMS transaction table.
+The request body is `{ "to": ["08012345678"], "message": "Your update", "consentConfirmed": true }`.
+The configured server-side `TELECOM_ABODE_SMS_SENDER_ID` is used as the sender ID.
 
 VTU purchases require a verified account and sufficient wallet balance. Each
 purchase is reserved atomically and sent to Telecom Abode with a stable request

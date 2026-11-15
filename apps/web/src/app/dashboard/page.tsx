@@ -524,6 +524,33 @@ export default function DashboardPage() {
       </section>
 
       <section className="mt-8 rounded-lg border bg-card p-5 sm:p-6">
+        <h2 className="text-xl font-semibold">Send bulk SMS</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Only message recipients who have agreed to receive SMS from you. Each request supports up
+          to 50 unique Nigerian numbers and is charged by message page.
+        </p>
+        <pre className="mt-5 overflow-x-auto rounded-md bg-muted p-4 text-xs leading-6">
+          <code>{`curl -X POST "$PERMITT_API_URL/api/v1/sms" \\
+  -H "Authorization: Bearer YOUR_PERMITT_API_KEY" \\
+  -H "Idempotency-Key: $(node -e 'console.log(require("node:crypto").randomUUID())')" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "to": ["08012345678", "+2348123456789"],
+    "message": "Your appointment is tomorrow at 10am.",
+    "consentConfirmed": true
+  }'
+
+curl "$PERMITT_API_URL/api/v1/sms?id=YOUR_MESSAGE_ID" \\
+  -H "Authorization: Bearer YOUR_PERMITT_API_KEY"`}</code>
+        </pre>
+        <p className="mt-3 text-xs text-muted-foreground">
+          A 202 response means Telecom Abode accepted the request, not that every SMS was delivered.
+          Check its delivery report with the returned message ID. Do not retry if the outcome is
+          unknown; check the same ID first.
+        </p>
+      </section>
+
+      <section className="mt-8 rounded-lg border bg-card p-5 sm:p-6">
         <h2 className="text-xl font-semibold">Add wallet credits by bank transfer</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           OPay provides a dynamic account for a specific amount. Enter at least ₦100, then transfer

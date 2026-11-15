@@ -1,7 +1,21 @@
 import { ApiError } from "./errors";
+import { telecomAbodeApiKey } from "./env";
 
 const API_BASE = "https://telecomabode.com.ng/api";
 const PROVIDER_TIMEOUT_MS = 20_000;
+
+export type BulkSmsResult = {
+  status: "accepted" | "failed" | "unknown";
+  requestId?: string;
+};
+
+export type SmsDelivery = {
+  number: string;
+  status: string;
+  page?: string;
+  created_at?: string;
+  updated_at?: string;
+};
 
 export type AirtimeNetwork = {
   id: number;
@@ -25,15 +39,7 @@ export type ProviderResult = {
 };
 
 function apiKey() {
-  const key = process.env.TELECOM_ABODE_API_KEY?.trim();
-  if (!key) {
-    throw new ApiError(
-      503,
-      "service_not_configured",
-      "The Telecom Abode provider is not configured on the server.",
-    );
-  }
-  return key;
+  return telecomAbodeApiKey();
 }
 
 async function providerRequest(path: string, init?: RequestInit) {
@@ -310,4 +316,112 @@ export async function getTransactionStatus(requestId: string): Promise<ProviderR
   }
   if (!response.ok) return { status: "unknown", message: providerMessage(body) };
   return classifyProviderResult(response, body);
+}
+
+export async function sendBulkSms(input: {
+  senderId: string;
+  recipients: string[];
+  message: string;
+}): Promise<BulkSmsResult> {
+  const key = apiKey();
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/bulk-sms`, {
+      method: "POST",
+      cache: "no-store",
+      signal: AbortSignal.timeout(PROVIDER_TIMEOUT_MS),
+      headers: {
+        authorization: `Token ${key}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        subject: input.senderId,
+        bulkPhones: input.recipients.join(","),
+        message: input.message,
+      }),
+    });
+  } catch {
+    return { status: "unknown" };
+  }
+
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    return { status: "unknown" };
+  }
+  const result = objectValue(body);
+  const requestId =
+    typeof result?.["request-id"] === "string" && result["request-id"].trim()
+      ? result["request-id"].trim().slice(0, 200)
+      : undefined;
+  if (response.status >= 500 || response.status === 408) {
+    return { status: "unknown", requestId };
+  }
+  const providerStatus = String(result?.status ?? "").toLowerCase();
+  if (response.ok && providerStatus === "success" && requestId) {
+    return { status: "accepted", requestId };
+  }
+  if (
+    (response.status >= 400 && response.status < 500) ||
+    ["fail", "failed", "error"].includes(providerStatus)
+  ) {
+    return { status: "failed" };
+  }
+  return { status: "unknown" };
+}
+
+export async function getSmsReport(requestId: string): Promise<SmsDelivery[]> {
+  const response = await providerRequest(`/sms-report?sms_id=${encodeURIComponent(requestId)}`, {
+    headers: { authorization: `Token ${apiKey()}` },
+  });
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    throw new ApiError(
+      502,
+      "provider_invalid_response",
+      "Telecom Abode returned an invalid SMS report.",
+    );
+  }
+  if (!response.ok) {
+    throw new ApiError(
+      502,
+      "provider_report_failed",
+      "Telecom Abode could not load the SMS report.",
+    );
+  }
+  const result = objectValue(body);
+  const reportStatus = result?.status;
+  if (reportStatus !== true && reportStatus !== "true") {
+    throw new ApiError(
+      502,
+      "provider_report_failed",
+      "Telecom Abode could not load the SMS report.",
+    );
+  }
+  if (!Array.isArray(result?.data)) {
+    throw new ApiError(
+      502,
+      "provider_invalid_response",
+      "Telecom Abode returned an invalid SMS report.",
+    );
+  }
+
+  return result.data.slice(0, 50).flatMap((entry) => {
+    const row = objectValue(entry);
+    if (!row || typeof row.number !== "string" || typeof row.status !== "string") {
+      return [];
+    }
+    return [
+      {
+        number: row.number.slice(0, 32),
+        status: row.status.slice(0, 40),
+        ...(typeof row.page === "string" ? { page: row.page.slice(0, 10) } : {}),
+        ...(typeof row.created_at === "string" ? { created_at: row.created_at.slice(0, 40) } : {}),
+        ...(typeof row.updated_at === "string" ? { updated_at: row.updated_at.slice(0, 40) } : {}),
+      },
+    ];
+  });
 }

@@ -124,7 +124,7 @@ export const aboutPage = {
       {
         title: "Ship carefully",
         description:
-          "Email comes first. SMS follows only once email is stable and its abuse controls are proven.",
+          "Email comes first. Bulk SMS is being added with explicit recipient consent, per-key limits and delivery reports.",
       },
     ] satisfies StepItem[],
   },
