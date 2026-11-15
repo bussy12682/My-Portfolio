@@ -8,27 +8,22 @@ type WordmarkProps = {
   className?: string;
 };
 
-/**
- * Typographic stand-in until the final logo (satellite symbol, transparent SVG) is supplied.
- * Swap the inner markup for the SVG; every placement already goes through this component.
- */
 export function Wordmark({ brand = "rektina", href = "/", className }: WordmarkProps) {
   return (
     <Link
       href={href}
       aria-label={brand === "rektina" ? "REKTINA.sub home" : "Permitt by REKTINA home"}
-      className={cn(
-        "inline-flex items-baseline gap-1.5 font-heading text-[1.3125rem] leading-none font-bold tracking-[-0.045em] text-foreground",
-        className,
-      )}
+      className={cn("inline-flex items-baseline gap-1.5 text-foreground", className)}
     >
       {brand === "rektina" ? (
-        <span>
-          REKTINA<span className="text-orbital">.sub</span>
+        <span className="font-[Segoe_Script,Brush_Script_MT,cursive] text-2xl leading-none font-normal tracking-normal">
+          Rektina.sub
         </span>
       ) : (
         <>
-          <span>Permitt</span>
+          <span className="font-heading text-[1.3125rem] leading-none font-bold tracking-[-0.045em]">
+            Permitt
+          </span>
           <span className="text-xs font-normal text-muted-foreground">by REKTINA</span>
         </>
       )}

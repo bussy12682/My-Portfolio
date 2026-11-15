@@ -39,6 +39,7 @@ A layer may import only from layers above it in this list.
 - A dark site: #0F0F0F canvas, #151515 panels, a black closing band. **Blue (#116FF8)** is the only accent: primary buttons, open/close marks, focus and small highlights.
 - Square edges (3px), hairline borders, big semibold type with tight tracking. No glows on cards, no pills with dots, no decorative gradients beyond the closing band.
 - Two identities: **REKTINA.sub** (consumer) and **Permitt by REKTINA** (developer). Keep the two experiences visibly distinct.
+- REKTINA.sub's logo is the text-only handwritten wordmark in `apps/web/src/components/brand/wordmark.tsx`. Keep shared placements on this component; do not add a symbol or image.
 - Show the product: drawn receipts, plan pickers and API calls on light `Stage` panels, never stock photos. Replace social proof we don't have with verifiable product facts.
 
 ## Systems
@@ -62,7 +63,6 @@ Foundations used by every system:
 
 ## Open decisions
 
-- **Logo:** we need a transparent SVG with the satellite symbol. Until then, `apps/web/src/components/brand/wordmark.tsx` renders a typographic placeholder.
 - **Typeface:** Host Grotesk (sans and headings, via `next/font` in `apps/web/src/app/layout.tsx`). Geist Mono is used only for code and IDs inside product screens.
 - **Prices:** developer pricing isn't set (the PRD sets it after provider selection). The Pricing page says so; don't add numbers until they're real.
 - **Media:** all images are Unsplash placeholders listed in `apps/web/src/config/media.ts`.
