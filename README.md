@@ -73,7 +73,8 @@ Vercel's encrypted Environment Variables settings and never commit credentials:
 
 `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME` are optional and have defaults. Set the SMS
 page price in kobo before enabling SMS, and configure a Telecom Abode sender ID that
-has been approved for the account. SMS uses `TELECOM_ABODE_API_KEY`. Verify
+is accepted by the provider. Telecom Abode support has advised that sender-ID
+pre-approval is not required. SMS uses `TELECOM_ABODE_API_KEY`. Verify
 the sender domain in Resend before sending; `RESEND_FROM_EMAIL` must use that
 verified domain, not a personal Gmail address. Keep all credentials server-side;
 do not use a `NEXT_PUBLIC_` prefix for secrets.
@@ -97,7 +98,7 @@ For wallet bank-transfer deposits, configure PaymentPoint's webhook URL as
    `PAYMENTPOINT_BUSINESS_ID`, and `TELECOM_ABODE_API_KEY`. Set the Paystack
    top-up limits too, and optionally
    `EMAIL_DAILY_LIMIT` and `RESEND_FROM_NAME`. Before enabling SMS, configure
-   `SMS_PRICE_PER_PAGE_KOBO` and the approved `TELECOM_ABODE_SMS_SENDER_ID`.
+   `SMS_PRICE_PER_PAGE_KOBO` and `TELECOM_ABODE_SMS_SENDER_ID`.
    Redeploy after changing variables.
 2. In Neon SQL Editor, apply migration `202611110001_initial_backend.sql`,
    followed by `202611110002_vtu_purchases.sql`,
