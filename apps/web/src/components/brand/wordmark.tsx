@@ -1,4 +1,5 @@
 import { cn } from "@rektinasub/ui/lib/utils";
+import Image from "next/image";
 import Link from "next/link";
 
 type WordmarkProps = {
@@ -13,12 +14,20 @@ export function Wordmark({ brand = "rektina", href = "/", className }: WordmarkP
     <Link
       href={href}
       aria-label={brand === "rektina" ? "REKTINA.sub home" : "Permitt by REKTINA home"}
-      className={cn("inline-flex items-baseline gap-1.5 text-foreground", className)}
+      className={cn(
+        "inline-flex gap-1.5 text-foreground",
+        brand === "rektina" ? "items-center" : "items-baseline",
+        className,
+      )}
     >
       {brand === "rektina" ? (
-        <span className="font-[Segoe_Script,Brush_Script_MT,cursive] text-2xl leading-none font-normal tracking-normal">
-          Rektina.sub
-        </span>
+        <Image
+          src="/brand/rektina-wordmark.png"
+          alt=""
+          width={781}
+          height={264}
+          className="h-12 w-auto"
+        />
       ) : (
         <>
           <span className="font-heading text-[1.3125rem] leading-none font-bold tracking-[-0.045em]">
